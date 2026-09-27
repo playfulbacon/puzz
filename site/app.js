@@ -82,7 +82,7 @@ function brand(col) {
   const c = COLLECTIONS.find((x) => x.id === col);
   $(".brand .emblem").innerHTML = EMBLEMS[col || ""];
   $(".brand b").textContent = c ? c.name : "puzz";
-  $(".brand small").textContent = c ? `logic puzzles · ${c.place}` : "original themed logic puzzles";
+  $(".brand small").innerHTML = c ? `<span class="sub-kind">logic puzzles · </span>${esc(c.place)}` : "original themed logic puzzles";
   $(".brand").setAttribute("href", c ? `#/c/${c.id}` : "#/");
   document.title = c ? `${c.name} · puzz` : "puzz · themed logic puzzles";
 }
@@ -269,13 +269,15 @@ showVersion();
 // The badge shows the version this page is running. The site also asks the server (bypassing the
 // cache) for the latest version; if it's newer, it offers a reload that refreshes every cached file.
 function showVersion() {
-  const badge = document.createElement("a");
-  badge.className = "version-badge";
-  badge.href = "https://github.com/playfulbacon/puzz/blob/master/CHANGELOG.md";
-  badge.target = "_blank"; badge.rel = "noopener";
-  badge.title = `Released ${RELEASED}. Tap for the changelog.`;
-  badge.textContent = `v${VERSION}`;
-  document.body.appendChild(badge);
+  // In the header, beside the name: visible at the top of every page without scrolling.
+  const pill = document.createElement("a");
+  pill.className = "version-pill";
+  pill.href = "https://github.com/playfulbacon/puzz/blob/master/CHANGELOG.md";
+  pill.target = "_blank"; pill.rel = "noopener";
+  pill.title = `Released ${RELEASED}. Tap for the changelog.`;
+  pill.setAttribute("aria-label", `Version ${VERSION}, released ${RELEASED}. Open the changelog.`);
+  pill.textContent = `v${VERSION}`;
+  document.querySelector(".brand-line").appendChild(pill);
   const foot = document.querySelector(".foot");
   if (foot) foot.insertAdjacentHTML("beforeend", ` <span class="foot-version">Version ${esc(VERSION)}.</span>`);
   fetch(`version.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((latest) => {

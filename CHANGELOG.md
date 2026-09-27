@@ -2,6 +2,10 @@
 
 The site shows its version in the corner of every page. Every change bumps it (`npm run bump -- minor "what changed"`).
 
+## 1.5.0 (2026-09-27)
+- Version shown at the top of every page, beside the name (tap it for this changelog).
+- Phones: Undo / Clear / Check / Hint and the live rule messages sit right under the board; compact header and pickers so the board starts near the top.
+
 ## 1.4.0 (2026-09-27)
 - Version number always visible; the site checks for a newer deployed version and offers a cache-clearing reload.
 
