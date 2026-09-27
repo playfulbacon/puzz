@@ -1,6 +1,6 @@
-// Cable Cars boards: tap a square to cycle its piece of track (─ │ ┌ ┐ └ ┘ ┼, then × for "no track
-// here", then empty; turntables cycle through the four ways out). Long-press or right-click steps
-// back. Rails take a line's colour as soon as they connect to its turntable.
+// Cable Cars boards: tap a square to mark • (track here) or × (no track); dots and turntables join
+// up by themselves. Long-press or right-click picks an exact piece (e.g. ┼). Rails take a line's
+// colour as soon as they connect to its turntable.
 import { geometry, defs, bay, terrain, fixtures, railsSvgSegs, ridingCars, LINE_COLORS } from "../core/render/cable.js";
 import { buildModel, initState, tracksEngine } from "../core/tracks/engine.js";
 import { makeHuman } from "../core/lib/human.js";
@@ -32,10 +32,10 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     }
     return true;
   };
-  const cycle = (i) => {
+  const pieces = (i) => {
     if (m.blocked[i]) return null;
     if (m.endpoint[i] >= 0) return BIT.filter((b) => fits(i, b));
-    return [...ALL.filter((x) => fits(i, x)), X];
+    return ALL.filter((x) => fits(i, x));
   };
   const carPiece = (i) => { const c = p.cars?.[i]; return c ? (c === "H" ? H : V) : undefined; };
   const solution = solutionPieces(L.n, L.cellEdges, p.solution);
@@ -59,14 +59,18 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     n: L.n, s,
     cellRect: (i) => ({ x: (i % p.cols) * s, y: g.Y0 + Math.floor(i / p.cols) * s }),
     centre: (i) => [g.cx(i % p.cols), g.cy(Math.floor(i / p.cols))],
-    cycle, fixed: carPiece, solution, colourOf,
+    pieces, fixed: carPiece, solution, colourOf,
+    nb: L.nb, blocked: (i) => !!m.blocked[i],
+    auto: (i) => m.endpoint[i] >= 0, ends: (i) => m.endpoint[i] >= 0, mustUse: (i) => m.endpoint[i] >= 0,
+    crossOK: (i) => m.endpoint[i] < 0 && carPiece(i) == null && [0, 1, 2, 3].every((d) => { const j = L.nb(i, d); return j >= 0 && !m.blocked[j]; }),
+    dotColour: "#7C7268",
     draw: (groups) => railsSvgSegs(g, groups),
     complete: (claims) => allConnected(p, claims),
     diagnose: (claims) => diagnose(p, claims),
     live: (claims) => liveCheck(p, claims),
     decor: () => ridingCars(p, g, new Set(p.solution)),
-    hintNext: (claims) => lineHint(tracksEngine, HM, m, claims, solution, L.cellEdges, L.n, {
-      baseState: () => initState(m), canFill: (i) => !m.blocked[i] && carPiece(i) == null,
+    hintNext: (claims, isEmpty) => lineHint(tracksEngine, HM, m, claims, solution, L.cellEdges, L.n, {
+      baseState: () => initState(m), canFill: (i) => !m.blocked[i] && carPiece(i) == null, isEmpty,
     }),
   }, { saved, onChange, onSolved, onVerdict, onLive });
 }

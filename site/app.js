@@ -14,8 +14,8 @@ const LEVELS = [["gentle", "Gentle"], ["medium", "Medium"], ["hard", "Hard"]];
 
 // Each puzzle family has its own art and its own interactive board.
 const FAMILY = {
-  road: { art: roadArt, play: roadPlay, howto: "Tap a square to change its piece of road: ─ │ ┌ ┐ └ ┘, then × for \"no road here\", then empty. Long-press or right-click to step back.", solvedLine: "The bridge is open!", almost: "The road reaches Vista Point, but it isn't right yet:" },
-  tracks: { art: cableArt, play: tracksPlay, howto: "Tap a square to change its piece of track: ─ │ ┌ ┐ └ ┘ ┼, then × for \"no track here\", then empty. Tap a turntable to choose which way its line leaves. Long-press or right-click to step back. Rails take a line's colour once they reach its turntable.", solvedLine: "All aboard: the cable cars are running!", almost: "Every line reaches its turntables, but something's wrong:" },
+  road: { art: roadArt, play: roadPlay, howto: "Tap a square once for • (road goes through here), twice for × (no road), three times to clear. Dots join up by themselves; a dot that could join too many neighbours turns red. Long-press or right-click to pick an exact piece.", solvedLine: "The bridge is open!", almost: "The road reaches Vista Point, but it isn't right yet:" },
+  tracks: { art: cableArt, play: tracksPlay, howto: "Tap a square once for • (track goes through here), twice for × (no track), three times to clear. Dots join up by themselves, and turntables join the dot next to them; a dot that could join too many turns red. Long-press or right-click to pick an exact piece, e.g. ┼ for a crossing. Rails take a line's colour once they reach its turntable.", solvedLine: "All aboard: the cable cars are running!", almost: "Every line reaches its turntables, but something's wrong:" },
   hide: { art: forestArt, play: hidePlay, howto: "Tap a hiker to turn them clockwise (long-press or right-click turns them back). Tap an open square to hide the Sasquatch there. Squares nobody can see are in shadow.", solvedLine: "Nobody saw a thing!", almost: "The Sasquatch is placed and every hiker is turned, but:" },
 };
 const VARIANT_HINTS = {

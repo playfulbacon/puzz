@@ -1,5 +1,5 @@
-// Golden Gate boards: tap a square to cycle its piece of road (─ │ ┌ ┐ └ ┘, then × for "no road
-// here", then empty); long-press or right-click steps back.
+// Golden Gate boards: tap a square to mark • (road here) or × (no road); dots join into road by
+// themselves. Long-press or right-click picks an exact piece.
 import { geometry, defs, water, terrain, ships, fogBanks, shoreTop, shoreBottom, roadSvgD, bridgeDecor, foghorns, landNumbers } from "../core/render/board.js";
 import { buildModel, initState } from "../core/road/engine.js";
 import { roadEngine, nextDeduction } from "../core/road/human.js";
@@ -30,11 +30,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     }
     return (piece & portBit(i)) === portBit(i);
   };
-  const cycle = (i) => {
-    if (m.blocked[i]) return null;
-    const list = ALL.filter((x) => fits(i, x));
-    return portBit(i) ? list : [...list, X];
-  };
+  const pieces = (i) => (m.blocked[i] ? null : ALL.filter((x) => fits(i, x)));
   const solution = solutionPieces(L.n, L.cellEdges, p.solution, portBit);
   const centre = (i) => [g.cx(i % p.cols), g.cy(Math.floor(i / p.cols))];
 
@@ -42,7 +38,9 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
   return mountPieces(svg, { road: layer("road-layer"), marks: layer("marks"), decor: layer("decor-layer"), hint: layer("hint-layer"), errors: layer("error-layer") }, {
     n: L.n, s,
     cellRect: (i) => ({ x: g.X0 + (i % p.cols) * s, y: g.Y0 + Math.floor(i / p.cols) * s }),
-    centre, cycle,
+    centre, pieces,
+    nb: L.nb, blocked: (i) => !!m.blocked[i], portBits: portBit, mustUse: (i) => !!portBit(i),
+    dotColour: "#C0362C",
     ports: (i) => {
       const [cx, cy] = centre(i), out = [];
       if (i === L.S) out.push([cx, cy + s / 2, g.plaza[0], g.plaza[1] - s * 0.13]);
@@ -59,8 +57,8 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     diagnose: (claims) => diagnose(p, claims),
     live: (claims) => liveCheck(p, claims),
     decor: () => bridgeDecor(p, g, [...p.solution, L.PS, L.PN]),
-    hintNext: (claims) => lineHint(roadEngine, H_, m, claims, solution, L.cellEdges, L.n, {
-      baseState: () => initState(m), isPort: (ed) => ed >= L.PS, canFill: (i) => !m.blocked[i],
+    hintNext: (claims, isEmpty) => lineHint(roadEngine, H_, m, claims, solution, L.cellEdges, L.n, {
+      baseState: () => initState(m), isPort: (ed) => ed >= L.PS, canFill: (i) => !m.blocked[i], isEmpty,
     }),
   }, { saved, onChange, onSolved, onVerdict, onLive });
 }

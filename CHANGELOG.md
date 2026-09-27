@@ -2,6 +2,9 @@
 
 The site shows its version at the top of every page, beside the name. Every change bumps it (`npm run bump -- minor "what changed"`).
 
+## 1.6.0 (2026-09-27)
+- Line puzzles: tap marks • (road here) or ×; dots join up with their neighbours automatically, and a dot that could join too many neighbours is outlined in red. Long-press still picks an exact piece. Cable Cars lines never run side by side, so dots always join correctly.
+
 ## 1.5.1 (2026-09-27)
 - Fix: "Admire the view" and "Keep going" now close the completion card.
 

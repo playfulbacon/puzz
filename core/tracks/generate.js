@@ -40,9 +40,20 @@ export function generate({ rows = 8, cols = 8, seed = 1, lines = null, addBack =
       const canStep = (prev, j, d, straightThrough) => {
         if (j < 0 || mine.has(j)) return false;
         for (let dd = 0; dd < 4; dd++) { const x = nb(j, dd); if (x >= 0 && x !== prev && mine.has(x)) return false; }
+        const crossable = (x) => !crossing[x] && axis[x] === (d < 2 ? 1 : 0);
+        // Different lines never run side by side (so dots on the board always join the right way):
+        // another line may only touch this square where we are crossing it.
+        for (let dd = 0; dd < 4; dd++) {
+          const x = nb(j, dd);
+          if (x < 0 || owner[x] < 0 || mine.has(x)) continue;
+          if (x === prev) continue;                                            // the crossing we just made
+          if (owner[j] >= 0 && owner[x] === owner[j]) continue;                // we're on the crossing square itself
+          if (straightThrough && x === nb(j, d) && crossable(x)) continue;     // the crossing straight ahead
+          return false;
+        }
         if (owner[j] < 0) return true;
         // Crossing another line: it must run straight across our direction, and we must go straight too.
-        return straightThrough && !crossing[j] && axis[j] === (d < 2 ? 1 : 0);
+        return straightThrough && crossable(j);
       };
       const rec = (dir, turns) => {
         if (++nodes > 3000) return false;
