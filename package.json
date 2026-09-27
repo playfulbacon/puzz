@@ -1,0 +1,11 @@
+{
+  "name": "puzz",
+  "private": true,
+  "description": "Original themed logic puzzles (Nikoli-style), starting with Golden Gate.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "generate": "node cli/generate.mjs --seeds 120",
+    "serve": "python3 -m http.server 8000"
+  }
+}
