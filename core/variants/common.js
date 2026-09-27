@@ -6,6 +6,8 @@ import { Rng } from "../lib/rng.js";
 import { layout, buildModel, solve, checkSolution, edgesFromPath, cellsUsed } from "../road/engine.js";
 import { walkRoute } from "../road/walk.js";
 import { humanSolve, analyse, gates } from "../road/human.js";
+import { weightedPick } from "../lib/human.js";
+export { weightedPick };
 
 export const failures = {};
 const fail = (why) => { failures[why] = (failures[why] || 0) + 1; return null; };
@@ -67,11 +69,4 @@ export function makeGenerator(v) {
       solution: onEdges, rating, gates: gates(rating),
     };
   };
-}
-
-export function weightedPick(rng, cands) {
-  const total = cands.reduce((a, c) => a + (c.w ?? 1), 0);
-  let x = rng.next() * total;
-  for (const c of cands) { x -= c.w ?? 1; if (x <= 0) return c; }
-  return cands[cands.length - 1];
 }

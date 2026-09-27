@@ -101,7 +101,7 @@ export function buildModel(spec) {
   counts.forEach((k, idx) => k.cells.forEach((c) => cellCounts[c].push(idx)));
   const cellLanes = Array.from({ length: L.n }, () => []);
   lanes.forEach((ln, idx) => ln.cells.forEach((c) => cellLanes[c].push(idx)));
-  return { spec, L, blocked, must, straight, orient, counts, cellCounts, lanes, cellLanes };
+  return { spec, rows: R, cols: C, L, blocked, must, straight, orient, counts, cellCounts, lanes, cellLanes };
 }
 
 // ------------------------------------------------------------------ state
@@ -390,7 +390,7 @@ export function applyDeduction(st, d) {
   return true;
 }
 
-const changes = (st, d) => d.set.some(([ed]) => st.e[ed] === UNK) || (d.need || []).some((c) => !st.need[c]);
+export const changes = (st, d) => d.set.some(([ed]) => st.e[ed] === UNK) || (d.need || []).some((c) => !st.need[c]);
 
 /** Apply rules up to maxTier until nothing changes. Returns "ok", "contra", or "capped". */
 export function propagate(m, st, maxTier = 3, maxSteps = Infinity, stats = null) {

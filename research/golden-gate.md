@@ -98,15 +98,15 @@ Pipeline (`core/variants/common.js`), identical for all three:
    Anything still stuck is rejected: no puzzle needs guessing.
 7. **Gate and select.** The quality gates (opening, ramp, breakthroughs, stall, finish, variety, clue use) come from `generation-heuristics.md`. The CLI samples many seeds and sizes, sorts them into Gentle (bands 1–2), Medium (3–4) and Hard (5), and keeps the best of each.
 
-**Results of the shipped build** (`site/data/puzzles.js`, 6 puzzles per level per variant):
+**Results of the shipped build** (`site/data/puzzles.js`, 6 puzzles per level per variant, regenerated alongside the Cable Cars and Sasquatch sets):
 
 | Variant | Attempts | Distinct puzzles | Pass every gate | Bands (count) | Most-failed gates |
 |---|---|---|---|---|---|
-| Spans | 6000 | 4205 | 1705 | 1: 1706, 3: 97, 4: 395, 5: 2007 | finish, breakthroughs, ramp |
-| Shipping Lanes | 1500 | 1175 | 846 | 1: 921, 3: 109, 4: 23, 5: 122 | breakthroughs, finish, ramp |
-| Fog Signals | 720 | 542 | 72 | 1: 76, 3: 53, 4: 189, 5: 224 | breakthroughs, opening, finish |
+| Spans | 720 | 487 | 214 | 1: 204, 3: 14, 4: 50, 5: 219 | finish, ramp, clue use |
+| Shipping Lanes | 600 | 476 | 355 | 1: 368, 3: 49, 4: 10, 5: 49 | finish, ramp, stall |
+| Fog Signals | 720 | 542 | 159 | 1: 76, 3: 53, 4: 189, 5: 224 | opening, finish, ramp |
 
-Every shipped puzzle passes every gate **except Shipping Lanes / Medium**. None of its 132 band 3–4 candidates has a breakthrough: the hard step (usually a bottleneck) happens, but it doesn't open the grid up afterwards. Those six puzzles are marked ✗ in their setter's notes rather than having the gate relaxed to fit. This is the first thing to look at in play-testing.
+Every shipped puzzle now passes every gate. In the first build, Shipping Lanes / Medium had none that did: its hard step never led to three or more options at once. The Cable Cars work showed why. In line puzzles, progress runs along a narrow front of one or two options at a time, so "≥ 3 options next" was biased toward wide-front puzzles like Fog Signals. A breakthrough is now a hard step taken at a stall that is followed by either ≥ 3 options or a run of ≥ 4 easy steps. The intent is the same (an aha that opens the puzzle back up), and the "hard step comes last" case is still caught by the finish gate.
 
 **What the metrics taught us:**
 - *The hard step comes last.* The most common failing gate is **finish**: the look-ahead lands at the very end, so there's no easy finish after it. That's the "flat, machine-like ending" flaw, and the gates filter it out.

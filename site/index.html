@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Golden Gate Puzzles</title>
-  <meta name="description" content="Original logic puzzles set in the San Francisco Bay: build one road from the toll plaza to Vista Point.">
+  <title>puzz · themed logic puzzles</title>
+  <meta name="description" content="Original themed logic puzzles: Golden Gate, Cable Cars and Sasquatch.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,24 +14,18 @@
 <body>
   <header class="top">
     <a class="brand" href="#/">
-      <svg class="emblem" viewBox="0 0 120 48" aria-hidden="true">
-        <path d="M2 34H118" stroke="currentColor" stroke-width="3"/>
-        <path d="M30 44V6M90 44V6" stroke="var(--orange)" stroke-width="5" stroke-linecap="square"/>
-        <path d="M26 12H34M26 22H34M86 12H94M86 22H94" stroke="var(--orange)" stroke-width="2"/>
-        <path d="M2 30Q16 28 30 8Q60 40 90 8Q104 28 118 30" fill="none" stroke="var(--orange)" stroke-width="2"/>
-        <path d="M40 18V34M50 24V34M60 26V34M70 24V34M80 18V34" stroke="var(--orange)" stroke-width="1" opacity=".7"/>
-      </svg>
-      <span><b>Golden Gate</b><small>bridge puzzles from the fog city</small></span>
+      <svg class="emblem" viewBox="0 0 120 48" aria-hidden="true"></svg>
+      <span><b>puzz</b><small>original themed logic puzzles</small></span>
     </a>
     <nav class="nav">
-      <a href="#/spans/gentle/1" data-v="spans">Spans</a>
-      <a href="#/lanes/gentle/1" data-v="lanes">Shipping Lanes</a>
-      <a href="#/fog/gentle/1" data-v="fog">Fog Signals</a>
-      <a href="#/notes" data-v="notes">Notes</a>
+      <a href="#/c/goldengate" data-c="goldengate">Golden Gate</a>
+      <a href="#/cablecar/gentle/1" data-c="cablecars">Cable Cars</a>
+      <a href="#/sasquatch/gentle/1" data-c="sasquatch">Sasquatch</a>
+      <a href="#/notes" data-c="notes">Notes</a>
     </nav>
   </header>
   <main id="main"></main>
-  <footer class="foot">Every puzzle has one solution, reached by reasoning alone. Computer-generated, measured, and hand-selected.</footer>
+  <footer class="foot">Every puzzle has one solution, reached by reasoning alone. Computer-generated, measured, and selected by quality gates.</footer>
   <script type="module" src="app.js"></script>
 </body>
 </html>

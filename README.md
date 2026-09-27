@@ -3,8 +3,14 @@
 Original, themed logic puzzles in the Nikoli tradition: short rules, one solution, no guessing, and a
 theme that explains the rules rather than decorating them.
 
-**Golden Gate** is the first set: three puzzles that each end with one International Orange road
-across the San Francisco Bay. Play at `site/` (GitHub Pages) or locally:
+Collections so far (write-ups in `research/`):
+
+- **Golden Gate**: Spans, Shipping Lanes, Fog Signals. One International Orange road across the bay.
+- **Cable Cars**: lines between turntables on a terraced city; streets run straight up the hills, so
+  lines only turn on level ground.
+- **Sasquatch**: turn the hikers to face the right way; exactly one square is left out of sight.
+
+Play at `site/` (GitHub Pages) or locally:
 
 ```
 npm run serve        # then open http://localhost:8000/site/
@@ -16,11 +22,13 @@ npm run generate     # regenerate site/data/puzzles.js (--variants spans --seeds
 
 ```
 research/                 principles, generation heuristics, Golden Gate design write-up
-core/road/                shared road engine: model + deduction rules + oracle (engine.js),
-                          human-style solver and path-shape metrics (human.js), route walker (walk.js)
-core/variants/            spans.js, lanes.js, fog.js, and the shared generation pipeline (common.js)
-core/render/board.js      SVG art for every variant
-site/                     the web app (no build step; imports ../core directly)
+core/lib/human.js         engine-agnostic human-style solver, path-shape metrics, quality gates
+core/road/                Golden Gate engine: one road shore to shore (engine, route walker, adapter)
+core/tracks/              Cable Cars engine + generator: several lines, crossings, level-ground turns
+core/hide/                Sasquatch engine + generator: hiker facings, exactly one blind spot
+core/variants/            variant metadata (rules text, hints) and collections; Golden Gate generators
+core/render/              SVG art: board.js (Golden Gate), cable.js, forest.js
+site/                     the web app (no build step; imports ../core directly); play*.js boards
 cli/generate.mjs          batch generation, gating and level selection
 test/                     node:test suite
 ```

@@ -13,7 +13,7 @@ export const PALETTE = {
 };
 const P = PALETTE;
 
-const hash = (n) => { let x = (n * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 1274126177) >>> 0; return (x ^ (x >>> 16)) / 4294967296; };
+const hash = (n) => { let x = (n * 2654435761) >>> 0; x ^= x >>> 13; x = Math.imul(x, 1274126177) >>> 0; return ((x ^ (x >>> 16)) >>> 0) / 4294967296; };
 const f = (x) => Math.round(x * 10) / 10;
 
 export function geometry(p, s = 60) {

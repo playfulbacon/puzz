@@ -34,7 +34,7 @@ These are computed from the human solver's step log. Each step records `(tier, t
 |---|---|---|
 | Opening width | Separate tier-1 deductions available at the start | ≥ 3 |
 | Ramp | How far through the solve (0–1) the first max-tier step comes | 0.25–0.6 |
-| Breakthroughs | Points where available deductions drop to 1, then open back up to ≥ 3 | 1–3 |
+| Breakthroughs | A hard step taken at a stall that opens things up: ≥ 3 options next, or a run of ≥ 4 easy steps (line puzzles advance on a narrow front) | 1–6 |
 | Stall depth | Longest run of steps with only one available deduction | ≤ 4 (bands 1–3), ≤ 8 (bands 4–5) |
 | Finish | Share of the grid solved by the tier-1 cascade after the last max-tier step | ≥ 0.3 |
 | Technique variety | Distinct techniques used | ≥ 3 at band ≥ 3 |
