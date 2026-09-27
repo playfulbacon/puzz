@@ -21,7 +21,7 @@ const PLAN = {
   lanes: [["7x7", [0, 2]], ["8x8", [0]], ["9x9", [0]], ["10x10", [0]]],
   fog: [["7x7", [3, 6]], ["7x7", [0]], ["8x8", [0, 4]], ["9x9", [2]]],
   cablecar: [["6x6", [0, 2, 4]], ["7x7", [0, 2, 4]], ["8x8", [0, 3], 0.5]],
-  sasquatch: [["6x6", [0, 2], 3], ["7x7", [0, 2], 3], ["8x8", [0, 3], 3], ["10x10", [0], 2]],
+  sasquatch: [["7x7", [0, 2]], ["8x8", [0, 2]], ["9x9", [0]]],
 };
 const LEVELS = { gentle: (b) => b <= 2, medium: (b) => b === 3 || b === 4, hard: (b) => b === 5 };
 
@@ -29,7 +29,8 @@ const LEVELS = { gentle: (b) => b <= 2, medium: (b) => b === 3 || b === 4, hard:
 function quality(p) {
   const r = p.rating, g = p.gates;
   const passed = Object.entries(g).filter(([k, v]) => k !== "pass" && v).length;
-  return passed * 10 + Math.min(r.breakthroughs, 3) * 2 + Math.min(r.variety, 8) + r.finish * 4 - Math.max(0, r.stall - 4);
+  return passed * 10 + Math.min(r.breakthroughs, 3) * 2 + Math.min(r.variety, 8) + r.finish * 4 - Math.max(0, r.stall - 4)
+    - (r.lookaheads || 0) * 6 + Math.min(r.reasoning || 0, 12);
 }
 
 // Keep packs for variants not being regenerated.
@@ -43,7 +44,7 @@ for (const id of variants) {
   const all = [];
   const t0 = Date.now();
   let tried = 0;
-  const failures = await import(`../core/${v.family === "road" ? "variants/common" : v.family === "tracks" ? "tracks/generate" : "hide/generate"}.js`).then((mod) => mod.failures);
+  const failures = await import(`../core/${v.family === "tracks" ? "tracks/generate" : "variants/common"}.js`).then((mod) => mod.failures);
   for (const k of Object.keys(failures)) delete failures[k];
   for (const [size, adds, mul = 1] of PLAN[id]) {
     const [rows, cols] = size.split("x").map(Number);
@@ -56,9 +57,9 @@ for (const id of variants) {
   }
   // De-duplicate identical grids (add-back can reproduce the minimal puzzle).
   const seen = new Set(), uniq = [];
-  for (const p of all) { const key = p.cells + JSON.stringify(p.lands || p.ships || p.fogs || p.numbers || p.cars || "") + (p.heights || ""); if (!seen.has(key)) { seen.add(key); uniq.push(p); } }
-  // Gentle: bands 1–2. Hard: band 5, topped up with the hardest band-4 puzzles if band 5 is short.
-  // Medium: bands 3–4 not used for Hard. Within a level, puzzles passing every gate come first.
+  for (const p of all) { const key = p.cells + JSON.stringify(p.lands || p.ships || p.fogs || p.hikers || p.numbers || p.cars || "") + (p.heights || ""); if (!seen.has(key)) { seen.add(key); uniq.push(p); } }
+  // Gentle: bands 1–2. Hard: the most reasoning among bands 4–5. Medium: bands 3–4 not used for Hard.
+  // Within a level, puzzles passing every gate come first.
   const byQuality = (a, b) => (b.gates.pass - a.gates.pass) || (quality(b) - quality(a)) || (a.rows * a.cols - b.rows * b.cols);
   // One puzzle per base seed across all levels (add-back variants of a seed look alike).
   const usedBase = new Set();
@@ -73,13 +74,12 @@ for (const id of variants) {
     return out;
   };
   const gentle = take(uniq.filter((p) => p.rating.band <= 2));
-  let hard = take(uniq.filter((p) => p.rating.band === 5));
-  if (hard.length < perLevel) {
-    const extra = uniq.filter((p) => p.rating.band === 4).sort((a, b) => (b.gates.pass - a.gates.pass) || (b.rating.score - a.rating.score)).slice(0, perLevel * 3);
-    hard = hard.concat(take(extra).slice(0, perLevel - hard.length));
-  }
+  // Hard: the most reasoning (bands 4–5, passing every gate, which caps look-aheads at two).
+  const hardPool = uniq.filter((p) => p.rating.band >= 4).sort((a, b) => (b.gates.pass - a.gates.pass) || (b.rating.score - a.rating.score)).slice(0, perLevel * 4);
+  const hard = take(hardPool);
   const inHard = new Set(hard.map((p) => p.id));
-  const medium = take(uniq.filter((p) => (p.rating.band === 3 || p.rating.band === 4) && !inHard.has(p.id)));
+  // Medium keeps look-aheads to at most one: the solve should narrow cell by cell.
+  const medium = take(uniq.filter((p) => (p.rating.band === 3 || p.rating.band === 4) && !inHard.has(p.id) && (p.rating.lookaheads || 0) <= 1));
   const order = (list) => list.sort((a, b) => a.rows * a.cols - b.rows * b.cols || a.rating.score - b.rating.score);
   packs[id] = { gentle: order(gentle), medium: order(medium), hard: order(hard) };
   const bands = {}; uniq.forEach((p) => { bands[p.rating.band] = (bands[p.rating.band] || 0) + 1; });

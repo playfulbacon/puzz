@@ -6,7 +6,6 @@ import { layout, buildModel } from "../core/road/engine.js";
 import * as road from "../core/road/diagnose.js";
 import * as tracks from "../core/tracks/diagnose.js";
 import { layout as tlayout } from "../core/tracks/engine.js";
-import * as hide from "../core/hide/diagnose.js";
 
 const B = [1, 2, 4, 8];
 const piecesOf = (L, edges, n) => {
@@ -15,7 +14,7 @@ const piecesOf = (L, edges, n) => {
   return claims;
 };
 
-for (const id of ["spans", "lanes", "fog"]) {
+for (const id of ["spans", "lanes", "fog", "sasquatch"]) {
   test(`${id}: the solution has no complaints; a stray piece is explained`, () => {
     const p = PACKS[id].gentle[0], L = layout(p.rows, p.cols, p.start, p.end);
     const claims = piecesOf(L, p.solution, L.n);
@@ -46,10 +45,9 @@ test("cable cars: the solution has no complaints", () => {
   assert.deepEqual(tracks.diagnose(p, claims), []);
 });
 
-test("sasquatch: the solution has no complaints; wrong facings are explained", () => {
-  const p = PACKS.sasquatch.gentle[0];
-  assert.deepEqual(hide.diagnose(p, p.solution.facing, p.solution.spot), []);
-  const wrong = p.solution.facing.map(() => "U");
-  const reasons = hide.diagnose(p, wrong, p.solution.spot);
-  assert.ok(reasons.length > 0);
+test("sasquatch: a trail through a hiker's hearing range with the wrong count is explained", () => {
+  const p = PACKS.sasquatch.gentle[0], L = layout(p.rows, p.cols, p.start, p.end);
+  const claims = piecesOf(L, p.solution, L.n);
+  claims[L.S] |= 8; claims[L.T] |= 4;
+  assert.deepEqual(road.diagnose(p, claims), []);
 });

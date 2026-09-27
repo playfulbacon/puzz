@@ -65,19 +65,20 @@ export const NOTES = {
   },
   sasquatch: {
     fiction: [
-      ["Hikers look where they're walking.", "Each hiker sees straight ahead until a tree gets in the way, and not behind them. A Sasquatch can stand right at a hiker's back."],
-      ["Some hikers are counting.", "A number says how many squares that hiker can see, which is usually enough to tell which way they face."],
-      ["There's exactly one square nobody can see.", "That's the only place the Sasquatch can be. Turning a hiker changes which squares are out of sight, and it must end with exactly one."],
+      ["You're the Sasquatch.", "The hikers aren't yours to move: each faces a fixed way and looks straight ahead until a tree blocks the view. Every square in a sight beam is off limits."],
+      ["Sneak from the den to the river.", "One unbroken trail, no branches, no loops, from the cave at the bottom to the water at the top."],
+      ["Every snapped twig is heard.", "A number on a hiker is how many trail squares pass among the eight squares around them. You have to pass close, but exactly that close."],
     ],
     techniques: [
-      ["Measure", "Count the squares to the first tree in each direction; a number fits only some of them."],
-      ["Two blind spots", "If turning a hiker one way would leave two squares unwatched, it can't face that way. This is the signature technique."],
-      ["Watch", "Once the hiding place is known, every other square must be watched. A square only one hiker can still see decides that hiker's direction."],
-      ["Look-ahead", "Harder woods need you to follow a facing through several hikers before the contradiction appears."],
+      ["Out of sight", "Sight beams wall off the woods; the trail has to thread the gaps between them."],
+      ["Heard enough", "A hiker whose count is already met hears no more: the trail stays out of their other squares."],
+      ["Every twig", "A hiker needing as many squares as the trail can still use around them gets all of them."],
+      ["Overlap", "Two hikers sharing squares: the difference in their numbers settles the squares only one of them hears."],
+      ["No dead ends", "The trail must keep going; pockets it can't leave, and squares it can't reach unseen, stay empty."],
     ],
-    lineage: "Relatives: Akari/Light Up (lines of sight stopped by walls) and puzzles with one-way searchlights. New here is the single global rule, exactly one square in shadow, and that you decide which way people are looking rather than where things go.",
-    generator: "The hiding place is chosen first, then a sparse forest. Hikers are placed one by one where they watch the most unwatched squares, never facing the hiding place. Every hiker is numbered; if the facings still aren't unique, the generator drops a redundant hiker or plants a tree that changes what a hiker would see. Numbers are then removed one by one while the answer stays unique.",
-    process: "The first design hid one Sasquatch per patch of woods, out of sight of hikers and of each other. It worked but was almost always easy, with a dozen hikers doing all the work. There was no global rule to reason with. Giving hikers a single facing, and making \"exactly one square in shadow\" the global rule, turned the hiding place into the answer to a real deduction.",
+    lineage: "It shares Fog Signals' counting (the part that felt best to solve) and adds sight lines that close off whole rows and columns. The player is the hunted, not the watcher.",
+    generator: "The hidden trail is a chain of straight runs from den to river, with a few trees off the trail. Hikers are added only where they rule out a rival trail, never where they could see the true one: by sight, by their count, or both. Then hikers are removed, or their numbers hidden, while the trail stays unique.",
+    process: "The first Sasquatch had you turning the hikers to leave one blind spot. It was logically sound but put you in the wrong role: you were the watcher. Now the hikers are fixed and you are the one hiding. The rules reuse the counting that made Fog Signals the most satisfying so far, and puzzles are picked for a steady, cell-by-cell solve.",
   },
 };
 
@@ -96,5 +97,5 @@ export const TECHNIQUE_NAMES = {
   finished: "Finished", loop: "No loops", early: "Not too soon", reach: "Out of reach", pocket: "Dead-end pocket",
   bottleneck: "Bottleneck", overlap: "Overlap", "trial-short": "Short look-ahead", trial: "Long look-ahead",
   steep: "Steep", turntable: "Turntable", crossing: "Crossing", car: "Cable car", "wrong-line": "Which line?",
-  measure: "Measure", watch: "Watch", gap: "Two blind spots", spot: "Last shadow",
+
 };

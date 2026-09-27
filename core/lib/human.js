@@ -128,12 +128,24 @@ export function analyse(m, trace, clueUse = null) {
   const techniques = {};
   for (const s of steps) techniques[s.rule] = (techniques[s.rule] || 0) + 1;
   const hard = steps.filter((s) => s.tier >= 3).length;
+  // Cell-by-cell narrowing: look-aheads feel like guessing; the target solve narrows by clues alone.
+  const lookaheads = steps.filter((s) => s.rule === "trial" || s.rule === "trial-short").length;
+  const reasoning = steps.filter((s) => s.tier >= 2 && s.rule !== "trial" && s.rule !== "trial-short").length;
+  let dist = 0, moves = 0, prev = null;
+  for (const s of steps) {
+    if (!s.focus?.length) continue;
+    const c = [s.focus.reduce((a, i) => a + Math.floor(i / m.cols), 0) / s.focus.length, s.focus.reduce((a, i) => a + (i % m.cols), 0) / s.focus.length];
+    if (prev) { dist += Math.abs(c[0] - prev[0]) + Math.abs(c[1] - prev[1]); moves++; }
+    prev = c;
+  }
   const band = maxTier;
-  const score = Math.round((band * 10 + Math.min(hard, 20) * 0.6 + steps.filter((s) => s.tier >= 4).length * 1.5) * 10) / 10;
+  // Difficulty within a band comes from real reasoning steps, not from how many look-aheads it took.
+  const score = Math.round((band * 10 + Math.min(reasoning, 20) * 0.8 + Math.min(lookaheads, 3) * 0.5) * 10) / 10;
   return {
     band, label: BAND_LABELS[band], score, steps: n, maxTier,
     opening, ramp: n && firstMax >= 0 ? +(firstMax / n).toFixed(2) : 0,
     breakthroughs, stall, finish: +(finishDecided / (total || 1)).toFixed(2), variety: Object.keys(techniques).length, techniques,
+    lookaheads, reasoning, locality: moves ? +(dist / moves).toFixed(2) : 0,
     clueUse,
   };
 }
@@ -148,6 +160,8 @@ export function gates(a) {
     finish: a.finish >= 0.2,
     variety: a.band <= 2 || a.variety >= 4,
     clueUse: a.clueUse == null || a.clueUse >= 0.8,
+    // The target experience is cell-by-cell narrowing: at most two look-aheads in any puzzle.
+    lookahead: (a.lookaheads ?? 0) <= 2,
   };
   return { ...g, pass: Object.values(g).every(Boolean) };
 }

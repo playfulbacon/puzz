@@ -7,7 +7,7 @@ import { layout, buildModel } from "../core/road/engine.js";
 import { buildModel as tmodel } from "../core/tracks/engine.js";
 
 test("golden gate: dots on every road square resolve to the solution", () => {
-  for (const id of ["spans", "lanes", "fog"]) for (const list of Object.values(PACKS[id])) for (const p of list) {
+  for (const id of ["spans", "lanes", "fog", "sasquatch"]) for (const list of Object.values(PACKS[id])) for (const p of list) {
     const m = buildModel(p), L = m.L;
     const portBits = (i) => (i === L.S ? 8 : 0) | (i === L.T ? 4 : 0);
     const sol = solutionPieces(L.n, L.cellEdges, p.solution, portBits);

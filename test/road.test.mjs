@@ -43,7 +43,7 @@ test("dead-end pockets are never entered", () => {
   assert.equal(solve(m).count, 1);
 });
 
-for (const id of Object.keys(VARIANTS).filter((k) => VARIANTS[k].family === "road")) {
+for (const id of Object.keys(VARIANTS).filter((k) => ["road", "trail"].includes(VARIANTS[k].family))) {
   test(`${id}: generated puzzles are unique and solved by the human solver`, () => {
     let made = 0;
     for (let seed = 1; seed <= 6; seed++) {
@@ -61,12 +61,11 @@ for (const id of Object.keys(VARIANTS).filter((k) => VARIANTS[k].family === "roa
 
 test("every shipped puzzle is valid and unique", async () => {
   const T = await import("../core/tracks/engine.js");
-  const S = await import("../core/hide/engine.js");
   for (const [id, levels] of Object.entries(PACKS)) for (const [level, list] of Object.entries(levels)) {
     assert.ok(list.length > 0, `${id}/${level} is not empty`);
     for (const p of list) {
       const family = VARIANTS[id].family;
-      if (family === "road") {
+      if (family === "road" || family === "trail") {
         const m = buildModel(p);
         assert.ok(checkSolution(m, edgesOf(p)), `${p.id} valid`);
         assert.equal(solve(m, { budget: 200000 }).count, 1, `${p.id} unique`);
@@ -75,10 +74,6 @@ test("every shipped puzzle is valid and unique", async () => {
         for (const ed of p.solution) e[ed] = 1;
         assert.ok(T.checkSolution(m, e), `${p.id} valid`);
         assert.equal(T.solve(m, { budget: 200000 }).count, 1, `${p.id} unique`);
-      } else {
-        const m = S.buildModel(p);
-        assert.equal(S.hidingSpot(m, p.solution.facing.map((d) => "LRUD".indexOf(d))), p.solution.spot, `${p.id} valid`);
-        assert.equal(S.solve(m, { budget: 200000 }).count, 1, `${p.id} unique`);
       }
     }
   }

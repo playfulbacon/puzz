@@ -65,7 +65,7 @@ export function makeGenerator(v) {
       id: `${v.id}-${rows}x${cols}-s${seed}${addBack ? "-a" + addBack : ""}`,
       variant: v.id, rows, cols, start: spec.start, end: spec.end, seed, addBack,
       cells: spec.cells.join(""), rules: spec.rules,
-      ...(spec.lands ? { lands: spec.lands } : {}), ...(spec.ships ? { ships: spec.ships } : {}), ...(spec.fogs ? { fogs: spec.fogs } : {}),
+      ...(spec.lands ? { lands: spec.lands } : {}), ...(spec.ships ? { ships: spec.ships } : {}), ...(spec.fogs ? { fogs: spec.fogs } : {}), ...(spec.hikers ? { hikers: spec.hikers } : {}),
       solution: onEdges, rating, gates: gates(rating),
     };
   };

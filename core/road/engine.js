@@ -38,10 +38,19 @@ export function layout(R, C, start, end) {
 }
 
 // ------------------------------------------------------------------ puzzle spec → model
-// spec.cells is a string, one char per cell: '.' water, 'o' land, '#' rock, 's' ship, 'f' foghorn.
-const BLOCKING = new Set(["#", "s", "f"]);
+// spec.cells is a string, one char per cell: '.' water/ground, 'o' land, '#' rock/tree, 's' ship,
+// 'f' foghorn, 'h' hiker. Hikers (spec.hikers = { [cell]: { dir, n } }) look straight ahead until a
+// tree: every square they see is off limits, and a number counts path squares around them.
+const BLOCKING = new Set(["#", "s", "f", "h"]);
 export const isBlockingChar = (ch) => BLOCKING.has(ch);
 const DIR_INDEX = { L: DL, R: DR, U: DU, D: DD };
+
+/** Squares a hiker sees: straight ahead until a tree ('#') or the edge; other hikers don't block. */
+export function hikerView(L, cells, at, dir) {
+  const d = typeof dir === "string" ? DIR_INDEX[dir] : dir, out = [];
+  for (let j = L.nb(at, d); j >= 0 && cells[j] !== "#"; j = L.nb(j, d)) out.push(j);
+  return out;
+}
 
 export function laneCells(L, cells, at, dir) {
   const d = typeof dir === "string" ? DIR_INDEX[dir] : dir;
@@ -92,6 +101,11 @@ export function buildModel(spec) {
   for (const [k, n] of Object.entries(spec.lands || {})) {
     const at = +k;
     counts.push({ kind: "land", at, cells: landRegion(L, cells, at), n });
+  }
+  for (const [k, h] of Object.entries(spec.hikers || {})) {
+    const at = +k;
+    for (const c of hikerView(L, cells, at, h.dir)) if (!isBlockingChar(cells[c])) blocked[c] = 1;
+    if (h.n != null) counts.push({ kind: "hiker", at, dir: h.dir, cells: fogCells(L, cells, at), n: h.n });
   }
   for (const [k, n] of Object.entries(spec.fogs || {})) {
     const at = +k;

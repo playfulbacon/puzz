@@ -1,6 +1,5 @@
-// Sasquatch art: a Pacific Northwest forest under a snow-capped peak. Hikers wear bright jackets
-// and cast warm sight beams straight ahead; every square no beam reaches sits in shadow; the
-// Sasquatch waits in the last shadow.
+// Forest pieces shared by the Sasquatch art (core/render/trail.js): floor, conifers, hikers in
+// bright jackets with warm sight beams, and the Sasquatch.
 
 const INK = "#1D2A22";
 const JACKETS = ["#E8702A", "#F2C14E", "#D9483B", "#3E8FC4", "#9B5DE5"];
@@ -133,17 +132,4 @@ export function sasquatchSvg(x, y, s, cls = "") {
 export function trailhead(g) {
   return `<g><rect x="0" y="${g.Yb}" width="${g.W}" height="${g.H - g.Yb}" fill="#4E3C2B"/>
   <text x="${g.s * 0.25}" y="${f(g.Yb + (g.H - g.Yb) / 2)}" class="shore-label light">TRAILHEAD · NO SASQUATCH SIGHTINGS REPORTED</text></g>`;
-}
-
-export function staticSvg(p, { s = 60, solved = false, id = "fs" + p.seed, cls = "" } = {}) {
-  const g = geometry(p, s); g.id = id;
-  const hikers = [...p.cells].map((ch, i) => (ch === "h" ? i : -1)).filter((i) => i >= 0);
-  const facing = {};
-  if (solved) hikers.forEach((i, k) => { facing[i] = p.solution.facing[k]; });
-  const b = beams(p, g, facing);
-  const people = hikers.map((i, k) => hikerSvg(g.cx(i % p.cols), g.cy(Math.floor(i / p.cols)), s, facing[i] || null, p.numbers[i], p.seed * 13 + k)).join("");
-  const sq = solved ? sasquatchSvg(g.cx(p.solution.spot % p.cols), g.cy(Math.floor(p.solution.spot / p.cols)), s) : "";
-  return `<svg class="board ${cls}" viewBox="0 0 ${g.W} ${g.H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sasquatch puzzle">
-${defs(id)}${sky(p, g)}${floor(p, g)}${solved ? shadows(p, g, b.seen) : ""}${b.svg}${trees(p, g)}${people}${sq}${trailhead(g)}
-</svg>`;
 }

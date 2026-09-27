@@ -74,6 +74,7 @@ export function diagnose(p, claims) {
     if (used === k.n) continue;
     const text = k.kind === "land" ? `This island has ${used} road square${used === 1 ? "" : "s"}; its number says ${k.n}.`
       : k.kind === "ship" ? `This ship would pass under the road ${used} time${used === 1 ? "" : "s"}; its number says ${k.n}.`
+      : k.kind === "hiker" ? `This hiker would hear ${used} twig${used === 1 ? "" : "s"} snap; their number says ${k.n}.`
       : `This foghorn hears ${used} road square${used === 1 ? "" : "s"}; its number says ${k.n}.`;
     reasons.push({ text, cells: [k.at, ...k.cells.filter((c) => route.has(c))] });
   }
@@ -135,8 +136,9 @@ export function liveCheck(p, claims) {
   for (const k of m.counts) {
     const used = k.cells.filter((c) => isPiece(claims[c])).length;
     const possible = k.cells.filter((c) => claims[c] !== 16).length;
-    const what = k.kind === "land" ? "island" : k.kind === "ship" ? "ship" : "foghorn";
-    if (used > k.n) add(`This ${what} already has more road than its number (${k.n}) allows.`, [k.at, ...k.cells.filter((c) => isPiece(claims[c]))]);
+    const what = k.kind === "land" ? "island" : k.kind === "ship" ? "ship" : k.kind === "hiker" ? "hiker" : "foghorn";
+    if (k.kind === "hiker" && used > k.n) add(`This hiker would hear more twigs snap than their number (${k.n}).`, [k.at, ...k.cells.filter((c) => isPiece(claims[c]))]);
+    else if (used > k.n) add(`This ${what} already has more road than its number (${k.n}) allows.`, [k.at, ...k.cells.filter((c) => isPiece(claims[c]))]);
     else if (possible < k.n) add(`This ${what} needs ${k.n}, but too many of its squares are marked ×.`, [k.at]);
   }
   return out;

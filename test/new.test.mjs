@@ -1,10 +1,8 @@
-// Cable Cars (tracks engine) and Sasquatch (hide engine).
+// Cable Cars (tracks engine).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as T from "../core/tracks/engine.js";
-import * as S from "../core/hide/engine.js";
 import { generate as genTracks } from "../core/tracks/generate.js";
-import { generate as genHide } from "../core/hide/generate.js";
 import { makeHuman } from "../core/lib/human.js";
 
 test("tracks: a line can't turn on a slope", () => {
@@ -33,26 +31,7 @@ test("tracks: a cable car fixes a straight piece", () => {
   assert.equal(st.e[m.L.cellEdges[4][T.DD]], T.OFF);
 });
 
-test("hide: exactly one square out of sight", () => {
-  // Two hikers in a 1×4 strip: facing right from the left end sees everything; the spot must be dark.
-  const m = S.buildModel({ rows: 1, cols: 4, cells: "h..h", numbers: { 0: 2 } });
-  // Hiker 0 sees 3 squares facing right (incl. hiker 3's square) but the number says 2: impossible,
-  // so no solution exists.
-  assert.equal(S.solve(m).count, 0);
-  const m2 = S.buildModel({ rows: 1, cols: 5, cells: "h...h", numbers: { 0: 0, 4: 3 } });
-  // Hiker 0 faces left (sees 0); hiker 4 faces... left sees 4 squares, so it must face somewhere with 3: none → 0 solutions.
-  assert.equal(S.solve(m2).count, 0);
-  const m3 = S.buildModel({ rows: 1, cols: 4, cells: "h..#", numbers: {} });
-  // Hiker faces right and sees both squares: no dark square. Facing any other way: both dark. Never exactly one.
-  assert.equal(S.solve(m3).count, 0);
-  const m4 = S.buildModel({ rows: 2, cols: 3, cells: "h.#..h", numbers: {} });
-  // Top hiker looks down (sees square 3), bottom hiker looks left (sees 4 and 3): only square 1 is dark.
-  assert.equal(S.hidingSpot(m4, [3, 0]), 1);
-  // Top hiker looks right instead: everything is watched, no hiding place.
-  assert.equal(S.hidingSpot(m4, [1, 0]), -1);
-});
-
-for (const [name, gen, E] of [["cable cars", genTracks, T.tracksEngine], ["sasquatch", genHide, S.hideEngine]]) {
+for (const [name, gen, E] of [["cable cars", genTracks, T.tracksEngine]]) {
   test(`${name}: generated puzzles are unique and solved by the human solver`, () => {
     const H = makeHuman(E);
     let made = 0;
@@ -60,8 +39,8 @@ for (const [name, gen, E] of [["cable cars", genTracks, T.tracksEngine], ["sasqu
       const p = gen({ rows: 6, cols: 6, seed, addBack: 2 });
       if (!p) continue;
       made++;
-      const m = (name === "cable cars" ? T : S).buildModel(p);
-      assert.equal((name === "cable cars" ? T : S).solve(m).count, 1, `${p.id} unique`);
+      const m = T.buildModel(p);
+      assert.equal(T.solve(m).count, 1, `${p.id} unique`);
       assert.ok(H.humanSolve(m).solved, `${p.id} human-solvable`);
     }
     assert.ok(made >= 2, `${name}: generator produces puzzles`);

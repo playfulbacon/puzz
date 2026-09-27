@@ -6,7 +6,6 @@ import { layout } from "../core/road/engine.js";
 import { layout as tlayout, buildModel as tmodel, levelTurn } from "../core/tracks/engine.js";
 import * as road from "../core/road/diagnose.js";
 import * as tracks from "../core/tracks/diagnose.js";
-import * as hide from "../core/hide/diagnose.js";
 
 const B = [1, 2, 4, 8];
 const piecesOf = (L, edges, n) => {
@@ -16,7 +15,7 @@ const piecesOf = (L, edges, n) => {
 };
 
 test("road: no live warnings on any shipped solution, or on its partial halves", () => {
-  for (const id of ["spans", "lanes", "fog"]) for (const list of Object.values(PACKS[id])) for (const p of list) {
+  for (const id of ["spans", "lanes", "fog", "sasquatch"]) for (const list of Object.values(PACKS[id])) for (const p of list) {
     const L = layout(p.rows, p.cols, p.start, p.end), c = piecesOf(L, p.solution, L.n);
     c[L.S] |= 8; c[L.T] |= 4;
     assert.deepEqual(road.liveCheck(p, c), [], p.id);
@@ -44,17 +43,4 @@ test("cable cars: no live warnings on shipped solutions; a turn on a slope is fl
   const i = [...Array(L.n).keys()].find((k) => !m.blocked[k] && m.endpoint[k] < 0 && L.nb(k, 1) >= 0 && L.nb(k, 3) >= 0 && !levelTurn(L, m.h, k, 1, 3));
   const c = new Array(L.n).fill(0); c[i] = 2 | 8;
   assert.match(tracks.liveCheck(p, c).map((x) => x.text).join(" "), /slope/);
-});
-
-test("sasquatch: no live warnings on shipped solutions; a mis-facing numbered hiker is flagged", () => {
-  for (const list of Object.values(PACKS.sasquatch)) for (const p of list) assert.deepEqual(hide.liveCheck(p, p.solution.facing, p.solution.spot), [], p.id);
-  const p = PACKS.sasquatch.gentle[0];
-  const hikers = [...p.cells].map((ch, i) => (ch === "h" ? i : -1)).filter((i) => i >= 0);
-  const k = hikers.findIndex((i) => p.numbers[i] != null);
-  const facing = p.solution.facing.map(() => null);
-  const all = ["L", "R", "U", "D"];
-  facing[k] = all.find((d) => d !== p.solution.facing[k]);
-  const warn = hide.liveCheck(p, facing, -1);
-  // A different direction may coincidentally give the same count; only assert when it doesn't.
-  if (warn.length) assert.match(warn[0].text, /numbered hiker/);
 });

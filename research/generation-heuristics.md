@@ -110,3 +110,29 @@ puzzle-books at commit `54ec84f` (2026-09-04): `docs/PLAN.md`, `docs/DESIGN-BRIE
 - **Verdict on completion.** When the player's answer is complete in shape (the road links both shores, every turntable pair is linked, or every hiker is turned and the Sasquatch placed), the board says whether it's right. If it isn't, it explains why in the puzzle's own terms ("Spans can't bend: the road turns on open water here", "This ship would pass under the road 2 times; its number says 1", "3 squares are out of sight") and outlines the squares involved. See `core/*/diagnose.js`.
 - **Live rule checks.** After every tap the board checks the player's marks against the rules, never against the answer, and outlines anything that already breaks one: a piece of road turning on open water, road running along a shipping lane, a line turning on a slope, two squares that disagree about a connection, a closed loop, two lines joined together, a clue already over its number (or with too many squares marked ×), a numbered hiker facing a way that gives the wrong count, a hiker looking straight at the Sasquatch. Unfinished work (a piece pointing at an empty square) is never flagged. Because the checks use only the rules, they never give away where the answer is. Tests assert they stay silent on every shipped solution and on half-finished ones (`test/live.test.mjs`).
 - **Dots that join themselves (v1.6).** In the line puzzles, tap marks a square • ("road goes through here") or × ("no road here"); dots connect to every neighbouring road square (other dots, the shore, turntables, parked cars), so the player never cycles through piece shapes. A dot that could join more neighbours than a road can (more than two, or more than one at a turntable, four only where a crossing is legal) is outlined in red. For this to be exact, the generators guarantee the hidden route never runs alongside itself, and in Cable Cars that two different lines never touch except where they cross. A test marks dots on every road square of every shipped puzzle and checks they join into exactly its solution (`test/dots.test.mjs`). Long-press or right-click still picks an exact piece.
+
+## 9. Selecting for cell-by-cell narrowing (v1.7)
+
+The user's target experience: *"solving it cell by cell, eliminating possibilities, opening up new pathways, narrowing the possibilities until the answer is clear."* That is a puzzle whose difficulty comes from many mid-tier deductions, each changing one or two squares, rather than from one big "what if" trial. The human solver now measures that directly (`core/lib/human.js`):
+
+- **reasoning**: tier ≥2 steps that aren't trials (the narrowing steps).
+- **lookaheads**: trial steps (short and long "what if").
+- **locality**: how close each step is to the one before, so the solver's attention flows along the line.
+
+Changes:
+
+- **Gate:** `lookahead ≤ 2`. A puzzle that needs three or more trials is guessing in disguise.
+- **Score:** `band×10 + min(reasoning, 20)×0.8 + min(lookaheads, 3)×0.5`, so within a band, reasoning outranks trials.
+- **Selection** (`cli/generate.mjs`): quality subtracts 6 per look-ahead and adds up to 12 for reasoning. Medium takes bands 3–4 with at most one look-ahead; hard takes the band ≥4 puzzles with the most reasoning, gate-passers first.
+
+What the shipped packs measure (R = reasoning, L = look-aheads, medium / hard):
+
+| Variant | Medium R | Medium L | Hard R | Hard L |
+|---|---|---|---|---|
+| Fog Signals | 2–3 | 0 | 2–4 | 0–1 |
+| Sasquatch | 2–6 | 0 | 2–6 | 0–1 |
+| Lanes | 0–1 | 0–1 | 0–6 | 1–2 |
+| Spans | 0–1 | 0–1 | 0–2 | 1 |
+| Cable Cars | 0–1 | 0–1 | 0–2 | 1–2 |
+
+**Finding.** Fog Signals and Sasquatch get their difficulty from narrowing, which matches the user's favourite. Spans and Cable Cars get it from one well-placed look-ahead: their rules have no count clues to reason with in the middle game, so between the easy moves there's a single trial. Selection can't fix that; it's a rules problem (the Spans v1 lesson again). Adding a count-style clue to those two is the next design question.

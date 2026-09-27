@@ -3,10 +3,10 @@ import { VARIANTS, COLLECTIONS, collectionOf } from "../core/variants/index.js";
 import { RULE_TEXT, TIER_NAMES as ROAD_TIERS } from "../core/road/human.js";
 import * as roadArt from "../core/render/board.js";
 import * as cableArt from "../core/render/cable.js";
-import * as forestArt from "../core/render/forest.js";
+import * as trailArt from "../core/render/trail.js";
 import * as roadPlay from "./play.js";
 import * as tracksPlay from "./play-tracks.js";
-import * as hidePlay from "./play-hide.js";
+import * as trailPlay from "./play-trail.js";
 import { NOTES, METRIC_INFO, TECHNIQUE_NAMES } from "./notes.js";
 import { VERSION, RELEASED } from "./version.js";
 
@@ -16,7 +16,7 @@ const LEVELS = [["gentle", "Gentle"], ["medium", "Medium"], ["hard", "Hard"]];
 const FAMILY = {
   road: { art: roadArt, play: roadPlay, howto: "Tap a square once for • (road goes through here), twice for × (no road), three times to clear. Dots join up by themselves; a dot that could join too many neighbours turns red. Long-press or right-click to pick an exact piece.", solvedLine: "The bridge is open!", almost: "The road reaches Vista Point, but it isn't right yet:" },
   tracks: { art: cableArt, play: tracksPlay, howto: "Tap a square once for • (track goes through here), twice for × (no track), three times to clear. Dots join up by themselves, and turntables join the dot next to them; a dot that could join too many turns red. Long-press or right-click to pick an exact piece, e.g. ┼ for a crossing. Rails take a line's colour once they reach its turntable.", solvedLine: "All aboard: the cable cars are running!", almost: "Every line reaches its turntables, but something's wrong:" },
-  hide: { art: forestArt, play: hidePlay, howto: "Tap a hiker to turn them clockwise (long-press or right-click turns them back). Tap an open square to hide the Sasquatch there. Squares nobody can see are in shadow.", solvedLine: "Nobody saw a thing!", almost: "The Sasquatch is placed and every hiker is turned, but:" },
+  trail: { art: trailArt, play: trailPlay, howto: "You're the Sasquatch. Tap a square once for • (your trail goes here), twice for × (not here), three times to clear. Dots join into a trail by themselves. Squares in a hiker's sight beam are off limits. Long-press or right-click to pick an exact piece.", solvedLine: "Nobody saw a thing!", almost: "The trail reaches the river, but:" },
 };
 const VARIANT_HINTS = {
   spans: {
@@ -30,7 +30,7 @@ const VARIANT_HINTS = {
 };
 const tierNames = (v) => v.tierNames || ROAD_TIERS;
 const ruleHint = (v, rule) => v.ruleHints?.[rule] || VARIANT_HINTS[v.id]?.[rule] || RULE_TEXT[rule]
-  || (rule === "spot" ? "Every hiker is facing the right way: the one square left in shadow is where the Sasquatch hides." : "");
+  || "";
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem("gg:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -106,7 +106,7 @@ function home() {
     <div class="cards">${c.variants.map(variantCard).join("")}</div>
   </section>`).join("");
   return `<section class="intro">
-    <p class="lede">Original logic puzzles in the Japanese tradition, each built around a place and a story. The rules come from the story: bridges can't bend, streets run straight up the hills, and a Sasquatch needs the one square nobody is looking at.</p>
+    <p class="lede">Original logic puzzles in the Japanese tradition, each built around a place and a story. The rules come from the story: bridges can't bend, streets run straight up the hills, and a Sasquatch has to sneak past hikers who never look behind them.</p>
     <p class="lede small">Every puzzle has exactly one solution, and you can reach it by reasoning alone, without guessing. <a href="#/notes">How they were designed →</a></p>
   </section>${sections}`;
 }

@@ -1,48 +1,53 @@
 # Sasquatch
 
-The brief: hide the Sasquatch in a wooded area where people are hiking. The Sasquatch must go in a square where humans can't see it.
+The brief: hide the Sasquatch in a wooded area where people are hiking. The Sasquatch must stay where humans can't see it. After playing it, the user sharpened the brief: *"I want to feel like I'm the Sasquatch hiding from humans who are not under my control"*, and the solving should feel like Fog Signals: cell by cell, narrowing the possibilities until the line is clear.
 
-## The rules
+## The rules (v3, "the trail")
 
-> Turn each hiker to face the right way. A hiker sees every square straight ahead until a tree blocks the view; a number says how many squares that is.
-> Facing the right way, the hikers leave exactly one square of the woods out of sight. Hide the Sasquatch there.
+> Lead the Sasquatch from its den to the river along one trail that never branches or crosses itself, and never steps where a hiker can see: hikers look straight ahead until a tree blocks the view.
+> A number on a hiker is how many twigs they heard snap: the trail squares among the eight squares around them.
 
-The player works out which way each hiker is looking. The Sasquatch's hiding place is the answer the whole board converges on: the one square left in shadow.
+You are the Sasquatch. The hikers are fixed, facing wherever they happen to face; you don't control them, you sneak past them. Every square a beam touches is off limits, and every number tells you how close the trail must pass (a 0 means give that hiker a wide berth; a 6 means you crept right around them).
 
 | Real thing | Puzzle rule |
 |---|---|
-| Hikers look where they're walking | Each hiker sees one straight line ahead, not behind (so a Sasquatch can stand right at their back) |
+| Bigfoot is never seen | The trail never enters a hiker's sight line |
+| Hikers look where they're walking | Each hiker sees one straight line ahead, not behind |
 | Trees block the view | Sight stops at the first tree |
-| Some hikers are counting what they see | A number is the length of that hiker's view |
-| Bigfoot is never seen | Exactly one square is out of everyone's sight |
+| Twigs snap underfoot | A number counts trail squares in the eight around that hiker |
+| The den and the river | The trail runs from a fixed entrance to a fixed exit, one unbroken line |
 
-**How it looks.** A Pacific Northwest forest below a snow-capped peak. Conifers come in three greens, one with a redwood trunk. Hikers wear bright jackets and cast warm sight beams straight ahead. Every square no beam reaches is in shadow, so as you turn hikers the shadows shrink toward the answer. The Sasquatch waves when you've found the spot. Along the bottom: "TRAILHEAD · NO SASQUATCH SIGHTINGS REPORTED".
+**How it looks.** A green forest floor between a river (with a fir-lined far bank) at the top and a rocky hillside with a cave, the den, at the bottom. Hikers in bright jackets cast warm sight beams. The trail you draw is a worn dirt path with big footprints; when it's done the Sasquatch walks out of the den along it and waves from the riverbank: "Nobody saw a thing!"
 
-## How the design got here: a first version that was too easy
+## How the design got here
 
-The first version was a placement puzzle: one Sasquatch per patch of woods, out of sight of every hiker and of each other.
+**v1, placement.** One Sasquatch per patch of woods, out of sight of every hiker and of each other. Nearly every puzzle was band 1–2: crossing off watched squares did almost all the work, and uniqueness needed 10–13 hikers, so boards were cluttered.
 
-- It generated easily, but nearly every puzzle was band 1–2. Crossing off the squares hikers can see did almost all the work, because every constraint was local, so uniqueness needed lots of local clues.
-- One-way hikers made each clue weaker, but the generator then needed 10–13 hikers per board, and puzzles stayed easy and got cluttered.
-- The fix was a **global rule**: exactly one square in shadow. It links every hiker to every other, which produces the signature technique, *two blind spots*: "if this hiker faced that way, two squares would be unwatched, but there is only one Sasquatch."
+**v2, turning hikers.** Turn each hiker so exactly one square is left in shadow; hide the Sasquatch there. The global rule fixed the difficulty, but the user rejected the fantasy: the solver was *controlling the humans*, not being the Sasquatch. Theme predicting rules (principle 7) cuts both ways: rules that work mechanically but cast the player in the wrong role break the story.
 
-This is the same lesson as Spans v1 (`golden-gate.md`): when every puzzle comes out easy, the fix is in the rules, not the generator.
+**v3, the trail.** Keep what worked (sight lines stopped by trees) and put the player in the Sasquatch's feet. The trail is a single line, which gives the Fog Signals texture the user liked best: each deduction fills or crosses a square, which opens or closes the next one. It reuses the road engine (edge states, ports, blocked squares, counts), so it inherits the dots-that-join interaction, live rule checks and verdicts.
 
 ## Principles applied
 
-- **The story makes the global rule.** "Nobody sees the Sasquatch" plus "there's only one Sasquatch" gives exactly one blind spot.
-- **Techniques:** *measure* (a number fits only some directions), *two blind spots* (tier 2, the signature), *watch* (once the hiding place is known, every other square needs a watcher, and a square only one hiker can still see decides that hiker), and look-aheads.
-- **Clues must earn their place.** Every hiker starts numbered; the generator removes numbers one at a time while the answer stays unique. Ambiguity is repaired by dropping a redundant hiker or planting a tree that changes a hiker's view length, never by adding decoration.
-- **A busy trail is part of the design.** Each hiker watches one line, and every square but one must be watched, so an 8×8 wood needs about 12 hikers whatever the tree density. The art keeps hikers small and bright.
+- **The story makes the rules.** Hikers are obstacles you read, not pieces you move. Sight lines become blocked squares; heard twigs become neighbourhood counts. Both are facts about the hikers, fixed before you arrive.
+- **Two kinds of clue, two kinds of reasoning.** Beams prune squares outright (tier 1, the break-in). Twig counts drive the narrowing: a 0 crosses off a ring, a high number forces the trail to hug a hiker, and a count that's almost satisfied closes the remaining neighbours. Counts combined with the one-line rule (dead ends, no branching, must reach the river) are where the mid-tier steps come from.
+- **Clues must earn their place.** Candidate hikers are placed only where their view never touches the true trail. A hiker is added only when it kills a rival solution (a silent hiker must kill it by sight and see at least two squares); then every removable hiker is sunk and every removable number hidden, and a few are added back for a smoother ramp.
+- **Trees are scenery that works.** 8–14% of off-trail squares get a tree, which cuts beams short, so where a hiker stands and which way they face both matter.
 
 ## Results
 
-| Attempts | Distinct | Pass every gate | Bands |
+| Attempts | Unique | Pass every gate | Bands (of unique) |
 |---|---|---|---|
-| 8000 | 3000 | 1328 | 1: 1010, 2: 1394, 4: 596 |
+| 600 | 543 | 185 | 1: 208, 3: 155, 4: 78, 5: 102 |
 
-About one seed in three yields a valid puzzle (the rest can't be repaired to a unique answer), at a few milliseconds each. Every shipped puzzle passes every gate.
+Shipped puzzles, measured by the human solver (R = mid-tier reasoning steps, L = look-ahead trials):
 
-**The honest gap:** Sasquatch never reaches band 5, and it has no tier-3 technique yet. Hard is the most demanding band-4 puzzles that pass every gate. A named mid-tier technique (for example "pairs of hikers who between them must cover two squares") would give a truer medium/hard split.
+| Level | R | L |
+|---|---|---|
+| Gentle | 0 | 0 |
+| Medium | 2–6 | 0 |
+| Hard | 2–6 | 0–1 |
 
-**Family.** Akari / Light Up (sight lines stopped by walls) and one-way searchlight puzzles. The new parts are that you decide which way people look rather than where things go, and the single "exactly one square in shadow" rule.
+Medium and hard are solved by reasoning, square by square, with at most one short look-ahead: the target experience. Every shipped puzzle passes every gate.
+
+**Family.** Slitherlink-style neighbourhood counts on a single path (as in Fog Signals), plus Akari-style sight lines stopped by walls. The new part is that the sight lines belong to people facing one way, and the counts are *around* them, so each hiker is both a wall of light and a clue.
