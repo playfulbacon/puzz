@@ -18,6 +18,17 @@ npm test             # engine rules, uniqueness, and every shipped puzzle
 npm run generate     # regenerate site/data/puzzles.js (--variants spans --seeds 1000 for one variant)
 ```
 
+## Versioning
+
+The site shows its version in the corner of every page and checks the server for a newer one on
+load (offering a cache-clearing reload). **Every change bumps the version**:
+
+```
+npm run bump -- minor "What changed"     # or patch / major
+```
+
+This updates `site/version.js`, `site/version.json` and `CHANGELOG.md`; a test checks they agree.
+
 ## Layout
 
 ```

@@ -8,6 +8,7 @@ import * as roadPlay from "./play.js";
 import * as tracksPlay from "./play-tracks.js";
 import * as hidePlay from "./play-hide.js";
 import { NOTES, METRIC_INFO, TECHNIQUE_NAMES } from "./notes.js";
+import { VERSION, RELEASED } from "./version.js";
 
 const LEVELS = [["gentle", "Gentle"], ["medium", "Medium"], ["hard", "Hard"]];
 
@@ -262,3 +263,38 @@ document.addEventListener("keydown", (ev) => {
 });
 window.addEventListener("hashchange", render);
 render();
+showVersion();
+
+// ------------------------------------------------------------------ version
+// The badge shows the version this page is running. The site also asks the server (bypassing the
+// cache) for the latest version; if it's newer, it offers a reload that refreshes every cached file.
+function showVersion() {
+  const badge = document.createElement("a");
+  badge.className = "version-badge";
+  badge.href = "https://github.com/playfulbacon/puzz/blob/master/CHANGELOG.md";
+  badge.target = "_blank"; badge.rel = "noopener";
+  badge.title = `Released ${RELEASED}. Tap for the changelog.`;
+  badge.textContent = `v${VERSION}`;
+  document.body.appendChild(badge);
+  const foot = document.querySelector(".foot");
+  if (foot) foot.insertAdjacentHTML("beforeend", ` <span class="foot-version">Version ${esc(VERSION)}.</span>`);
+  fetch(`version.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((latest) => {
+    if (!latest || !newer(latest.version, VERSION)) return;
+    const bar = document.createElement("div");
+    bar.className = "update-bar";
+    bar.innerHTML = `A newer version (v${esc(latest.version)}) is available. <button class="btn primary">Reload</button>`;
+    bar.querySelector("button").addEventListener("click", hardReload);
+    document.body.prepend(bar);
+  }).catch(() => {});
+}
+function newer(a, b) {
+  const x = a.split(".").map(Number), y = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  return false;
+}
+// Re-fetch every file this page loaded straight from the server, then reload, so no stale module survives.
+async function hardReload() {
+  const urls = new Set([location.href.split("#")[0], ...performance.getEntriesByType("resource").map((e) => e.name).filter((u) => u.startsWith(location.origin))]);
+  await Promise.all([...urls].map((u) => fetch(u, { cache: "reload" }).catch(() => {})));
+  location.reload();
+}
