@@ -2,6 +2,9 @@
 
 The site shows its version at the top of every page, beside the name. Every change bumps it (`npm run bump -- minor "what changed"`).
 
+## 1.5.1 (2026-09-27)
+- Fix: "Admire the view" and "Keep going" now close the completion card.
+
 ## 1.5.0 (2026-09-27)
 - Version shown at the top of every page, beside the name (tap it for this changelog).
 - Phones: Undo / Clear / Check / Hint and the live rule messages sit right under the board; compact header and pickers so the board starts near the top.
