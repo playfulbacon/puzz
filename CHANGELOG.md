@@ -1,6 +1,6 @@
 # Changelog
 
-The site shows its version in the corner of every page. Every change bumps it (`npm run bump -- minor "what changed"`).
+The site shows its version at the top of every page, beside the name. Every change bumps it (`npm run bump -- minor "what changed"`).
 
 ## 1.5.0 (2026-09-27)
 - Version shown at the top of every page, beside the name (tap it for this changelog).
