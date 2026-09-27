@@ -4,12 +4,13 @@
 import { geometry, defs, sky, floor, trees, beams, shadows, hikerSvg, sasquatchSvg, trailhead } from "../core/render/forest.js";
 import { buildModel, initState, hideEngine, YES } from "../core/hide/engine.js";
 import { makeHuman } from "../core/lib/human.js";
+import { diagnose } from "../core/hide/diagnose.js";
 
 const H = makeHuman(hideEngine);
 const CYCLE = ["U", "R", "D", "L"];
 const DIRS = ["L", "R", "U", "D"];
 
-export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {} } = {}) {
+export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null } = {}) {
   const g = geometry(p, 60); g.id = "fs" + p.seed;
   const { s } = g;
   const m = buildModel(p);
@@ -18,7 +19,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
   const facing = saved?.facing && saved.facing.length === hikerCells.length ? saved.facing.slice() : hikerCells.map(() => null);
   let hidden = saved?.hidden ?? -1;
   const undo = [];
-  let solved = false, hint = null;
+  let solved = false, hint = null, verdictShown = false;
 
   host.innerHTML = `<svg class="board live forest" viewBox="0 0 ${g.W} ${g.H}" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="Sasquatch board: tap hikers to turn them, tap a square to hide the Sasquatch">
     ${defs(g.id)}${sky(p, g)}${floor(p, g)}<g class="shade-layer"></g><g class="beam-layer"></g>${trees(p, g)}<g class="people"></g><g class="sq-layer"></g><g class="hint-layer"></g>${trailhead(g)}
@@ -39,7 +40,19 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
   function commit(ch) {
     if (!ch.length) return;
     undo.push(ch); clearHint(); draw(); onChange(state());
-    if (!solved && isSolved()) { solved = true; svg.classList.add("solved"); draw(); onSolved(); }
+    evaluate();
+  }
+  // Once every hiker is turned and the Sasquatch is placed, say whether it worked and why not.
+  function evaluate() {
+    if (solved) return;
+    if (isSolved()) { solved = true; svg.classList.add("solved"); draw(); onSolved(); onVerdict?.({ ok: true }); return; }
+    if (hidden >= 0 && facing.every(Boolean)) {
+      const reasons = diagnose(p, facing, hidden);
+      if (!reasons.length) reasons.push({ text: "Something doesn't match yet. Try Check to see what.", cells: [] });
+      layer("hint-layer").innerHTML = cellsSvg(reasons.flatMap((r) => r.cells), "mistake-cell");
+      verdictShown = true;
+      onVerdict?.({ ok: false, reasons });
+    } else if (verdictShown) { verdictShown = false; onVerdict?.(null); }
   }
   const setFacing = (k, v, ch) => { if (facing[k] === v) return; ch.push(["f", k, facing[k], v]); facing[k] = v; };
   const setHidden = (c, ch) => { if (hidden === c) return; ch.push(["s", 0, hidden, c]); hidden = c; };
@@ -62,7 +75,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
 
   // ---------------------------------------------------------------- hints
   function clearHint() { hint = null; layer("hint-layer").innerHTML = ""; }
-  const cellsSvg = (cells, cls) => cells.map((c) => `<rect class="${cls}" x="${(c % p.cols) * s + 3}" y="${g.Y0 + Math.floor(c / p.cols) * s + 3}" width="${s - 6}" height="${s - 6}" rx="10"/>`).join("");
+  const cellsSvg = (cells, cls) => [...new Set(cells)].map((c) => `<rect class="${cls}" x="${(c % p.cols) * s + 3}" y="${g.Y0 + Math.floor(c / p.cols) * s + 3}" width="${s - 6}" height="${s - 6}" rx="10"/>`).join("");
   const mistakes = () => {
     const bad = hikerCells.filter((c, k) => facing[k] && facing[k] !== truth[k]);
     if (hidden >= 0 && hidden !== p.solution.spot) bad.push(hidden);
@@ -75,14 +88,14 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
       if (solved) return;
       const ch = undo.pop(); if (!ch) return;
       for (let i = ch.length - 1; i >= 0; i--) { const [t, k, prev] = ch[i]; if (t === "f") facing[k] = prev; else hidden = prev; }
-      clearHint(); draw(); onChange(state());
+      clearHint(); draw(); onChange(state()); evaluate();
     },
     clear() {
       if (solved) return;
       const ch = [];
       facing.forEach((d, k) => setFacing(k, null, ch));
       setHidden(-1, ch);
-      if (ch.length) { undo.push(ch); clearHint(); draw(); onChange(state()); }
+      if (ch.length) { undo.push(ch); clearHint(); draw(); onChange(state()); evaluate(); }
     },
     check() { clearHint(); const bad = mistakes(); layer("hint-layer").innerHTML = cellsSvg(bad, "mistake-cell"); return bad.length; },
     hint() {

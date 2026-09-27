@@ -103,3 +103,8 @@ Pipeline for every genre: **structure → clues → symmetric reduction (the ora
 ## Source
 
 puzzle-books at commit `54ec84f` (2026-09-04): `docs/PLAN.md`, `docs/DESIGN-BRIEF.md`, `docs/REVIEW-APP.md`, `docs/strategies/`, `core/lib/difficulty.js`, `core/genres/{nurikabe,masyu,slitherlink,gokigen}/logic.js`, `review/app.js`.
+
+## 8. Interaction and feedback (app)
+
+- **Taps only.** Every square is changed by tapping it: line puzzles cycle through the pieces that fit the square (─ │ ┌ ┐ └ ┘, ┼ where lines may cross), then × ("nothing here", the deduction mark), then empty. Long-press or right-click steps back. Pieces that would point off the map or into an obstacle are never offered.
+- **Verdict on completion.** When the player's answer is complete in shape (the road links both shores, every turntable pair is linked, or every hiker is turned and the Sasquatch placed), the board says whether it's right. If it isn't, it explains why in the puzzle's own terms ("Spans can't bend: the road turns on open water here", "This ship would pass under the road 2 times; its number says 1", "3 squares are out of sight") and outlines the squares involved. See `core/*/diagnose.js`.

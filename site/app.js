@@ -13,9 +13,9 @@ const LEVELS = [["gentle", "Gentle"], ["medium", "Medium"], ["hard", "Hard"]];
 
 // Each puzzle family has its own art and its own interactive board.
 const FAMILY = {
-  road: { art: roadArt, play: roadPlay, howto: "Drag between squares to build road; drag over it again to remove it. Tap a gap, or right-click it, to mark it with an ×.", solvedLine: "The bridge is open." },
-  tracks: { art: cableArt, play: tracksPlay, howto: "Drag between squares to lay track; drag over it again to lift it. Tap a gap, or right-click it, to mark it with an ×. Rails take a line's colour once they reach its turntable.", solvedLine: "All aboard: the cable cars are running." },
-  hide: { art: forestArt, play: hidePlay, howto: "Tap a hiker to turn them clockwise (right-click turns them back). Tap an open square to hide the Sasquatch there. Squares nobody can see are in shadow.", solvedLine: "Nobody saw a thing." },
+  road: { art: roadArt, play: roadPlay, howto: "Tap a square to change its piece of road: ─ │ ┌ ┐ └ ┘, then × for \"no road here\", then empty. Long-press or right-click to step back.", solvedLine: "The bridge is open!", almost: "The road reaches Vista Point, but it isn't right yet:" },
+  tracks: { art: cableArt, play: tracksPlay, howto: "Tap a square to change its piece of track: ─ │ ┌ ┐ └ ┘ ┼, then × for \"no track here\", then empty. Tap a turntable to choose which way its line leaves. Long-press or right-click to step back. Rails take a line's colour once they reach its turntable.", solvedLine: "All aboard: the cable cars are running!", almost: "Every line reaches its turntables, but something's wrong:" },
+  hide: { art: forestArt, play: hidePlay, howto: "Tap a hiker to turn them clockwise (long-press or right-click turns them back). Tap an open square to hide the Sasquatch there. Squares nobody can see are in shadow.", solvedLine: "Nobody saw a thing!", almost: "The Sasquatch is placed and every hiker is turned, but:" },
 };
 const VARIANT_HINTS = {
   spans: {
@@ -132,7 +132,7 @@ function play(main, r) {
     <div class="board-col">
       <div class="picker"><div class="segs">${levelTabs}</div><div class="dots">${dots}</div></div>
       <div class="banner" hidden></div>
-      <div id="board" class="board-wrap"></div>
+      <div class="board-stage"><div id="board" class="board-wrap"></div><div class="verdict" hidden role="status" aria-live="polite"></div></div>
     </div>
     <aside class="side">
       <div class="panel">
@@ -164,7 +164,21 @@ function play(main, r) {
     banner.hidden = false;
     banner.innerHTML = `<strong>${esc(fam.solvedLine)}</strong> Solved in ${fmt(seconds)}. ${r.idx + 1 < list.length ? `<a href="#/${r.variant}/${r.level}/${r.idx + 2}">Next puzzle →</a>` : `<a href="#/notes/${r.variant}">Read the design notes →</a>`}`;
   };
+  const verdict = $(".verdict", main);
+  const onVerdict = (v) => {
+    if (!v) { verdict.hidden = true; return; }
+    verdict.hidden = false;
+    verdict.className = "verdict " + (v.ok ? "ok" : "no");
+    if (v.ok) {
+      const next = r.idx + 1 < list.length ? `<a class="btn primary" href="#/${r.variant}/${r.level}/${r.idx + 2}">Next puzzle →</a>` : `<a class="btn primary" href="#/notes/${r.variant}">Design notes →</a>`;
+      verdict.innerHTML = `<div class="verdict-card"><p class="verdict-title">${esc(fam.solvedLine)}</p><p>Solved in ${fmt(seconds)}.</p><div class="row">${next}<button class="btn" data-close>Admire the view</button></div></div>`;
+    } else {
+      verdict.innerHTML = `<div class="verdict-card"><p class="verdict-title">Not quite.</p><p>${esc(fam.almost)}</p><ul>${v.reasons.slice(0, 4).map((x) => `<li>${esc(x.text)}</li>`).join("")}</ul><p class="small">The squares involved are outlined in red.</p><div class="row"><button class="btn primary" data-close>Keep going</button></div></div>`;
+    }
+    verdict.querySelector("[data-close]")?.addEventListener("click", () => { verdict.hidden = true; });
+  };
   board = fam.play.mountBoard($("#board", main), p, {
+    onVerdict,
     saved: saved.state ?? saved.edges,
     onChange: (state) => persist({ state }),
     onSolved: () => { clearInterval(timer); persist({ solved: true }); showBanner(); $(".dot.on", main)?.classList.add("done"); hintText.textContent = ""; applyBtn.hidden = true; },
@@ -190,7 +204,8 @@ function play(main, r) {
         if (!h) hintText.textContent = board.solved ? "Solved!" : "No hint available.";
         else if (h.kind === "mistake") hintText.textContent = `Fix what's highlighted first: ${h.count} thing${h.count > 1 ? "s" : ""} don't fit.`;
         else {
-          hintText.innerHTML = `<b>${esc(TECHNIQUE_NAMES[h.rule] || h.rule)}</b> <span class="tier">${esc(tierNames(v)[h.tier] || "")}</span><br>${esc(ruleHint(v, h.rule))}`;
+          const where = h.piece != null ? ` The outlined square can be filled in${h.piece ? `: ${h.piece}` : " with ×"}.` : "";
+          hintText.innerHTML = `<b>${esc(TECHNIQUE_NAMES[h.rule] || h.rule)}</b> <span class="tier">${esc(tierNames(v)[h.tier] || "")}</span><br>${esc(ruleHint(v, h.rule))}${esc(where)}`;
           applyBtn.hidden = !h.count;
         }
       }, 20);

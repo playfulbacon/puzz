@@ -116,23 +116,34 @@ export function carSvg(x, y, s, angle, cls = "") {
 
 // Rails for a set of edges, coloured by the line they belong to (grey if not yet known).
 export function railsSvg(g, edgesByColor) {
-  const s = g.s;
   let out = "";
   for (const [color, edges] of edgesByColor) {
-    if (!edges.length) continue;
     let d = "";
     for (const ed of edges) {
       const [a, b] = g.L.ends[ed];
       d += `M${g.cx(a % g.L.C)} ${g.cy(Math.floor(a / g.L.C))}L${g.cx(b % g.L.C)} ${g.cy(Math.floor(b / g.L.C))}`;
     }
-    out += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    out += railsD(g, color, d);
+  }
+  return out;
+}
+
+/** Rails from raw segments grouped by colour: Map(colour → [[x1, y1, x2, y2]]). */
+export function railsSvgSegs(g, groups) {
+  let out = "";
+  for (const [color, segs] of groups) out += railsD(g, color, segs.map(([x1, y1, x2, y2]) => `M${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}`).join(""));
+  return out;
+}
+
+function railsD(g, color, d) {
+  if (!d) return "";
+  const s = g.s;
+  return `<g fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path d="${d}" stroke="#1E1A17" stroke-opacity="0.22" stroke-width="${f(s * 0.36)}" transform="translate(1.5 2.5)"/>
       <path d="${d}" stroke="${color}" stroke-width="${f(s * 0.34)}"/>
       <path d="${d}" stroke="#E8DCC2" stroke-width="${f(s * 0.22)}"/>
       <path d="${d}" stroke="#4A423A" stroke-width="${f(s * 0.035)}" stroke-dasharray="${f(s * 0.1)} ${f(s * 0.06)}"/>
     </g>`;
-  }
-  return out;
 }
 
 /** Ordered squares of each line in a solved drawing (turntable to turntable). */

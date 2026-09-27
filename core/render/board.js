@@ -252,8 +252,11 @@ export function roadPath(g, onEdges) {
   return d;
 }
 
-export function roadSvg(g, onEdges, cls = "road") {
-  const d = roadPath(g, onEdges), s = g.s;
+export function roadSvg(g, onEdges, cls = "road") { return roadSvgD(g, roadPath(g, onEdges), cls); }
+
+/** Road drawn from a path string (used by the tap boards, which draw half-pieces per square). */
+export function roadSvgD(g, d, cls = "road") {
+  const s = g.s;
   return `<g class="${cls}" stroke-linecap="round" stroke-linejoin="round" fill="none">
   <path d="${d}" stroke="#0B1A24" stroke-opacity="0.35" stroke-width="${f(s * 0.3)}" transform="translate(2 3)"/>
   <path d="${d}" stroke="${P.orangeDark}" stroke-width="${f(s * 0.28)}"/>

@@ -80,7 +80,7 @@ main { padding: clamp(16px, 3vw, 32px) clamp(16px, 4vw, 40px) 40px; max-width: 1
 .banner { background: var(--panel); border-left: 4px solid var(--orange); padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; animation: rise 0.6s ease both; }
 .board-wrap { border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); background: #173E53; }
 .board { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; }
-.board.live { touch-action: none; cursor: crosshair; }
+
 
 .side { display: flex; flex-direction: column; gap: 14px; }
 .panel { background: var(--panel); border-radius: 16px; padding: 16px 18px; border: 1px solid var(--line); }
@@ -176,3 +176,22 @@ body[data-collection="sasquatch"] { --orange: #C8601F; --orange-ink: #A94F17; --
 .board.solved .riders { animation: rise 0.8s ease both; }
 .board.solved .marks { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .sasquatch.waving .arm { animation: none; } }
+
+/* verdict card over the board */
+.board-stage { position: relative; }
+.verdict { position: absolute; inset: auto 12px 12px 12px; display: flex; justify-content: center; animation: rise 0.35s ease both; }
+.verdict-card { background: var(--panel); color: var(--ink); border-radius: 16px; padding: 16px 18px; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35); max-width: 520px; width: 100%; border-top: 5px solid var(--orange); }
+.verdict.no .verdict-card { border-top-color: #D6453A; }
+.verdict.ok .verdict-card { border-top-color: #3E9A5A; text-align: center; }
+.verdict-title { font: 700 22px/1.2 var(--display); letter-spacing: 0.04em; margin: 0 0 6px; }
+.verdict ul { margin: 6px 0; padding-left: 20px; }
+.verdict li { margin: 4px 0; }
+.verdict .small { font-size: 12.5px; color: var(--muted); margin: 4px 0 8px; }
+.verdict .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.btn { display: inline-block; font: 600 12.5px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; padding: 11px 15px; border-radius: 10px; border: 1.5px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+.btn:hover { text-decoration: none; }
+.cell-x { stroke: #F4F0E6; stroke-width: 3; stroke-linecap: round; opacity: 0.85; }
+.play[data-family="tracks"] .cell-x { stroke: #5B4A38; }
+.hint-target { fill: #FFD9A0; fill-opacity: 0.22; stroke: #FFB347; stroke-width: 3; pointer-events: none; animation: pulse 1s ease-in-out infinite alternate; }
+.board.live { cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; }
