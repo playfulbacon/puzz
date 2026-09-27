@@ -21,7 +21,7 @@ export const GLYPH = { 0: "", 3: "─", 12: "│", 10: "┌", 9: "┐", 6: "└"
  *   hintNext(claims) → {rule, tier, focus, cell, piece} | null,
  * }
  */
-export function mountPieces(svg, layers, cfg, { saved, onChange, onSolved, onVerdict }) {
+export function mountPieces(svg, layers, cfg, { saved, onChange, onSolved, onVerdict, onLive }) {
   const { n, s } = cfg;
   const claims = new Uint8Array(n);
   if (saved && saved.length === n) saved.forEach((v, i) => { claims[i] = v; });
@@ -54,6 +54,13 @@ export function mountPieces(svg, layers, cfg, { saved, onChange, onSolved, onVer
       marks += `M${f(cx - k)} ${f(cy - k)}L${f(cx + k)} ${f(cy + k)}M${f(cx + k)} ${f(cy - k)}L${f(cx - k)} ${f(cy + k)}`;
     }
     layers.marks.innerHTML = `<path d="${marks}" class="cell-x"/>`;
+    live();
+  }
+  // Real-time rule checks: outline anything that already breaks a rule.
+  function live() {
+    const problems = solved || !cfg.live ? [] : cfg.live(claims);
+    layers.errors.innerHTML = cellsSvg(problems.flatMap((x) => x.cells), "live-error");
+    onLive?.(problems);
   }
   const pieceOf = (i) => (claims[i] === X ? 0 : claims[i]);
   const isSolved = () => { for (let i = 0; i < n; i++) if (pieceOf(i) !== cfg.solution[i]) return false; return true; };

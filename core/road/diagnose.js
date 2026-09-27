@@ -79,3 +79,65 @@ export function diagnose(p, claims) {
   }
   return reasons;
 }
+
+// ------------------------------------------------------------------ live rule checks
+// Things on the board that already break a rule, whatever the rest turns out to be. Unfinished
+// work (a piece pointing at an empty square) is not an error; only real contradictions are.
+export function liveCheck(p, claims) {
+  const m = buildModel(p), { L } = m, out = [];
+  const add = (text, cells) => { if (cells.length) out.push({ text, cells }); };
+  const isPiece = (x) => x > 0 && x < 16;
+  const portBit = (i) => (i === L.S ? 8 : 0) | (i === L.T ? 4 : 0);
+
+  const clash = [];
+  for (let i = 0; i < L.n; i++) {
+    const x = claims[i]; if (!isPiece(x)) continue;
+    for (let d = 0; d < 4; d++) {
+      if (!has(x, d) || (portBit(i) & BIT[d])) continue;
+      const j = L.nb(i, d);
+      if (j < 0) continue;
+      const y = claims[j];
+      if (y === 16 || (isPiece(y) && !has(y, OPP[d]))) { clash.push(i, j); }
+    }
+  }
+  add("Two neighbouring squares disagree: one has road leading into the other, which doesn't connect back.", [...new Set(clash)]);
+
+  const turnsOnWater = [], alongLane = [];
+  for (let i = 0; i < L.n; i++) {
+    const x = claims[i]; if (!isPiece(x)) continue;
+    if (m.straight[i] && !m.orient[i] && x !== 3 && x !== 12 && [5, 6, 9, 10].includes(x)) turnsOnWater.push(i);
+    if (((m.orient[i] & 1) && (x & 3)) || ((m.orient[i] & 2) && (x & 12))) alongLane.push(i);
+  }
+  add("Spans can't bend: a piece of road turns on open water.", turnsOnWater);
+  add("A piece of road runs along a shipping lane; the road may only cross a lane straight over.", alongLane);
+
+  // A closed loop of road that doesn't reach the shore.
+  const e = mutualEdges(m, claims), seen = new Uint8Array(L.n), loops = [];
+  for (let s = 0; s < L.n; s++) {
+    if (seen[s] || !isPiece(claims[s])) continue;
+    const comp = [], q = [s]; seen[s] = 1;
+    let edges = 0;
+    while (q.length) {
+      const c = q.pop(); comp.push(c);
+      for (let d = 0; d < 4; d++) {
+        const ed = L.cellEdges[c][d];
+        if (ed < 0 || ed >= L.PS || e[ed] !== ON) continue;
+        edges++;
+        const j = L.nb(c, d);
+        if (!seen[j]) { seen[j] = 1; q.push(j); }
+      }
+    }
+    if (comp.length > 2 && edges / 2 >= comp.length && !comp.includes(L.S) && !comp.includes(L.T)) loops.push(...comp);
+  }
+  add("This road closes into a loop. The bridge is one road from shore to shore.", loops);
+
+  // Counting clues already over, or unable to reach their number.
+  for (const k of m.counts) {
+    const used = k.cells.filter((c) => isPiece(claims[c])).length;
+    const possible = k.cells.filter((c) => claims[c] !== 16).length;
+    const what = k.kind === "land" ? "island" : k.kind === "ship" ? "ship" : "foghorn";
+    if (used > k.n) add(`This ${what} already has more road than its number (${k.n}) allows.`, [k.at, ...k.cells.filter((c) => isPiece(claims[c]))]);
+    else if (possible < k.n) add(`This ${what} needs ${k.n}, but too many of its squares are marked ×.`, [k.at]);
+  }
+  return out;
+}

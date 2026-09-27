@@ -3,12 +3,12 @@
 import { geometry, defs, water, terrain, ships, fogBanks, shoreTop, shoreBottom, roadSvgD, bridgeDecor, foghorns, landNumbers } from "../core/render/board.js";
 import { buildModel, initState } from "../core/road/engine.js";
 import { roadEngine, nextDeduction } from "../core/road/human.js";
-import { diagnose, connected } from "../core/road/diagnose.js";
+import { diagnose, connected, liveCheck } from "../core/road/diagnose.js";
 import { mountPieces, solutionPieces, lineHint, BIT, X, H, V, NE, NW, SE, SW } from "./pieces.js";
 
 const ALL = [H, V, SE, SW, NE, NW];
 
-export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null } = {}) {
+export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null, onLive = null } = {}) {
   const g = geometry(p, 60); g.id = "pz" + p.seed;
   const { L, s } = g;
   const m = buildModel(p);
@@ -16,7 +16,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     ${defs(g.id, g)}${water(p, g)}${terrain(p, g)}${ships(p, g)}${fogBanks(p, g)}
     ${shoreTop(p, g)}${shoreBottom(p, g)}
     <g class="marks"></g><g class="road-layer"></g><g class="decor-layer"></g>
-    ${foghorns(p, g)}${landNumbers(p, g)}<g class="hint-layer"></g>
+    ${foghorns(p, g)}${landNumbers(p, g)}<g class="error-layer"></g><g class="hint-layer"></g>
   </svg>`;
   const svg = host.querySelector("svg");
   const layer = (c) => svg.querySelector("." + c);
@@ -39,7 +39,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
   const centre = (i) => [g.cx(i % p.cols), g.cy(Math.floor(i / p.cols))];
 
   const H_ = { nextDeduction };
-  return mountPieces(svg, { road: layer("road-layer"), marks: layer("marks"), decor: layer("decor-layer"), hint: layer("hint-layer") }, {
+  return mountPieces(svg, { road: layer("road-layer"), marks: layer("marks"), decor: layer("decor-layer"), hint: layer("hint-layer"), errors: layer("error-layer") }, {
     n: L.n, s,
     cellRect: (i) => ({ x: g.X0 + (i % p.cols) * s, y: g.Y0 + Math.floor(i / p.cols) * s }),
     centre, cycle,
@@ -57,9 +57,10 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     },
     complete: (claims) => connected(m, claims),
     diagnose: (claims) => diagnose(p, claims),
+    live: (claims) => liveCheck(p, claims),
     decor: () => bridgeDecor(p, g, [...p.solution, L.PS, L.PN]),
     hintNext: (claims) => lineHint(roadEngine, H_, m, claims, solution, L.cellEdges, L.n, {
       baseState: () => initState(m), isPort: (ed) => ed >= L.PS, canFill: (i) => !m.blocked[i],
     }),
-  }, { saved, onChange, onSolved, onVerdict });
+  }, { saved, onChange, onSolved, onVerdict, onLive });
 }

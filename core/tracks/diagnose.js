@@ -78,3 +78,59 @@ export function diagnose(p, claims) {
   }
   return reasons;
 }
+
+// ------------------------------------------------------------------ live rule checks
+export function liveCheck(p, claims) {
+  const m = buildModel(p), { L } = m, out = [];
+  const add = (text, cells) => { if (cells.length) out.push({ text, cells: [...new Set(cells)] }); };
+  const isPiece = (x) => x > 0 && x < 16;
+
+  const clash = [];
+  for (let i = 0; i < L.n; i++) {
+    const x = claims[i]; if (!isPiece(x)) continue;
+    for (let d = 0; d < 4; d++) {
+      if (!has(x, d)) continue;
+      const j = L.nb(i, d);
+      if (j < 0) continue;
+      const y = claims[j];
+      if (y === 16 || (isPiece(y) && !has(y, OPP[d]))) clash.push(i, j);
+    }
+  }
+  add("Two neighbouring squares disagree: one has track leading into the other, which doesn't connect back.", clash);
+
+  const steep = [];
+  for (let i = 0; i < L.n; i++) {
+    const x = claims[i];
+    const turn = [[0, 2], [0, 3], [1, 2], [1, 3]].find(([a, b]) => x === (BIT[a] | BIT[b]));
+    if (turn && !levelTurn(L, m.h, i, turn[0], turn[1])) steep.push(i);
+  }
+  add("A line turns on a slope. Lines only turn where the square before, the turn and the square after are all the same height.", steep);
+
+  const { find, selfCross, piece } = lines(m, claims);
+  add("A line crosses itself. Crossings are only for two different lines.", selfCross);
+  const ends = new Map();
+  for (let i = 0; i < L.n; i++) if (m.endpoint[i] >= 0) {
+    const r = find(L.E + i);
+    if (!ends.has(r)) ends.set(r, []);
+    ends.get(r).push(i);
+  }
+  for (const list of ends.values()) {
+    const labels = new Set(list.map((i) => m.labels[m.endpoint[i]]));
+    if (labels.size > 1) add(`Line ${[...labels].join(" and line ")} are joined together.`, list);
+  }
+  // Closed loops of track with no turntable.
+  const loopCells = [];
+  const byRoot = new Map();
+  for (let i = 0; i < L.n; i++) for (let d = 0; d < 4; d++) if (piece[i] & BIT[d]) {
+    const r = find(L.cellEdges[i][d]);
+    if (!byRoot.has(r)) byRoot.set(r, { cells: new Set(), open: false });
+    byRoot.get(r).cells.add(i);
+  }
+  for (let i = 0; i < L.n; i++) {
+    const x = claims[i]; if (!isPiece(x)) continue;
+    for (let d = 0; d < 4; d++) if ((x & BIT[d]) && !(piece[i] & BIT[d])) for (const [, v] of byRoot) if (v.cells.has(i)) v.open = true;
+  }
+  for (const [r, v] of byRoot) if (!ends.has(r) && !v.open && [...v.cells].every((c) => claims[c] === piece[c])) loopCells.push(...v.cells);
+  add("This track closes into a loop. Every line runs from turntable to turntable.", loopCells);
+  return out;
+}

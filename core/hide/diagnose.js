@@ -18,3 +18,18 @@ export function diagnose(p, facing, hidden) {
   else if (hidden >= 0 && hidden !== dark[0] && !seen.has(hidden)) reasons.push({ text: "The one square nobody can see is somewhere else.", cells: [hidden] });
   return reasons;
 }
+
+// Live checks: a hiker's number that can't match the way they face, and a Sasquatch in plain view.
+export function liveCheck(p, facing, hidden) {
+  const m = buildModel(p), out = [];
+  const wrongNum = [], spotted = [];
+  m.hikers.forEach((h, k) => {
+    const f = facing[k]; if (!f) return;
+    const d = DI[f];
+    if (h.number != null && h.len[d] !== h.number) wrongNum.push(h.at);
+    if (hidden >= 0 && h.sees[d].includes(hidden)) spotted.push(h.at, hidden);
+  });
+  if (wrongNum.length) out.push({ text: "A numbered hiker is facing a way where they'd see a different number of squares.", cells: wrongNum });
+  if (spotted.length) out.push({ text: "A hiker is looking straight at the Sasquatch.", cells: [...new Set(spotted)] });
+  return out;
+}

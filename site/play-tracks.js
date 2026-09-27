@@ -4,20 +4,20 @@
 import { geometry, defs, bay, terrain, fixtures, railsSvgSegs, ridingCars, LINE_COLORS } from "../core/render/cable.js";
 import { buildModel, initState, tracksEngine } from "../core/tracks/engine.js";
 import { makeHuman } from "../core/lib/human.js";
-import { diagnose, allConnected, lines } from "../core/tracks/diagnose.js";
+import { diagnose, allConnected, lines, liveCheck } from "../core/tracks/diagnose.js";
 import { mountPieces, solutionPieces, lineHint, BIT, X, H, V, NE, NW, SE, SW, CROSS } from "./pieces.js";
 
 const HM = makeHuman(tracksEngine);
 const NEUTRAL = "#7C7268";
 const ALL = [H, V, SE, SW, NE, NW, CROSS];
 
-export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null } = {}) {
+export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null, onLive = null } = {}) {
   const g = geometry(p, 60); g.id = "cc" + p.seed;
   const { L, s } = g;
   const m = buildModel(p);
   host.innerHTML = `<svg class="board live" viewBox="0 0 ${g.W} ${g.H}" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="Cable Cars board: tap a square to change its piece of track">
     ${defs(g.id, g)}${bay(p, g)}${terrain(p, g)}
-    <g class="marks"></g><g class="rails"></g>${fixtures(p, g)}<g class="riders"></g><g class="hint-layer"></g>
+    <g class="marks"></g><g class="rails"></g>${fixtures(p, g)}<g class="riders"></g><g class="error-layer"></g><g class="hint-layer"></g>
     <rect x="0" y="${g.Yb}" width="${g.W}" height="${g.H - g.Yb}" fill="#4A423A"/>
     <text x="${s * 0.25}" y="${g.Yb + (g.H - g.Yb) / 2}" class="shore-label light">MARKET STREET</text>
   </svg>`;
@@ -55,7 +55,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     });
   };
 
-  return mountPieces(svg, { road: layer("rails"), marks: layer("marks"), decor: layer("riders"), hint: layer("hint-layer") }, {
+  return mountPieces(svg, { road: layer("rails"), marks: layer("marks"), decor: layer("riders"), hint: layer("hint-layer"), errors: layer("error-layer") }, {
     n: L.n, s,
     cellRect: (i) => ({ x: (i % p.cols) * s, y: g.Y0 + Math.floor(i / p.cols) * s }),
     centre: (i) => [g.cx(i % p.cols), g.cy(Math.floor(i / p.cols))],
@@ -63,9 +63,10 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     draw: (groups) => railsSvgSegs(g, groups),
     complete: (claims) => allConnected(p, claims),
     diagnose: (claims) => diagnose(p, claims),
+    live: (claims) => liveCheck(p, claims),
     decor: () => ridingCars(p, g, new Set(p.solution)),
     hintNext: (claims) => lineHint(tracksEngine, HM, m, claims, solution, L.cellEdges, L.n, {
       baseState: () => initState(m), canFill: (i) => !m.blocked[i] && carPiece(i) == null,
     }),
-  }, { saved, onChange, onSolved, onVerdict });
+  }, { saved, onChange, onSolved, onVerdict, onLive });
 }

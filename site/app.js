@@ -144,6 +144,7 @@ function play(main, r) {
       <div class="panel controls">
         <div class="row"><button data-act="undo">Undo</button><button data-act="clear">Clear</button><button data-act="check">Check</button></div>
         <div class="row"><button class="primary" data-act="hint">Hint</button><button data-act="apply" hidden>Show me</button></div>
+        <ul class="live-errors" aria-live="polite" hidden></ul>
         <p class="hint-text" aria-live="polite"></p>
         <p class="meta"><span class="timer">0:00</span> · ${p.rows}×${p.cols} · difficulty band ${p.rating.band}/5</p>
       </div>
@@ -177,8 +178,13 @@ function play(main, r) {
     }
     verdict.querySelector("[data-close]")?.addEventListener("click", () => { verdict.hidden = true; });
   };
+  const liveList = $(".live-errors", main);
+  const onLive = (problems) => {
+    liveList.hidden = !problems.length;
+    liveList.innerHTML = problems.map((x) => `<li>${esc(x.text)}</li>`).join("");
+  };
   board = fam.play.mountBoard($("#board", main), p, {
-    onVerdict,
+    onVerdict, onLive,
     saved: saved.state ?? saved.edges,
     onChange: (state) => persist({ state }),
     onSolved: () => { clearInterval(timer); persist({ solved: true }); showBanner(); $(".dot.on", main)?.classList.add("done"); hintText.textContent = ""; applyBtn.hidden = true; },

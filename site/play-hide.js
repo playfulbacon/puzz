@@ -4,13 +4,13 @@
 import { geometry, defs, sky, floor, trees, beams, shadows, hikerSvg, sasquatchSvg, trailhead } from "../core/render/forest.js";
 import { buildModel, initState, hideEngine, YES } from "../core/hide/engine.js";
 import { makeHuman } from "../core/lib/human.js";
-import { diagnose } from "../core/hide/diagnose.js";
+import { diagnose, liveCheck } from "../core/hide/diagnose.js";
 
 const H = makeHuman(hideEngine);
 const CYCLE = ["U", "R", "D", "L"];
 const DIRS = ["L", "R", "U", "D"];
 
-export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null } = {}) {
+export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolved = () => {}, onVerdict = null, onLive = null } = {}) {
   const g = geometry(p, 60); g.id = "fs" + p.seed;
   const { s } = g;
   const m = buildModel(p);
@@ -22,7 +22,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
   let solved = false, hint = null, verdictShown = false;
 
   host.innerHTML = `<svg class="board live forest" viewBox="0 0 ${g.W} ${g.H}" xmlns="http://www.w3.org/2000/svg" role="application" aria-label="Sasquatch board: tap hikers to turn them, tap a square to hide the Sasquatch">
-    ${defs(g.id)}${sky(p, g)}${floor(p, g)}<g class="shade-layer"></g><g class="beam-layer"></g>${trees(p, g)}<g class="people"></g><g class="sq-layer"></g><g class="hint-layer"></g>${trailhead(g)}
+    ${defs(g.id)}${sky(p, g)}${floor(p, g)}<g class="shade-layer"></g><g class="beam-layer"></g>${trees(p, g)}<g class="people"></g><g class="sq-layer"></g><g class="error-layer"></g><g class="hint-layer"></g>${trailhead(g)}
   </svg>`;
   const svg = host.querySelector("svg");
   const layer = (c) => svg.querySelector("." + c);
@@ -34,6 +34,10 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     layer("shade-layer").innerHTML = shadows(p, g, b.seen);
     layer("people").innerHTML = hikerCells.map((c, k) => hikerSvg(g.cx(c % p.cols), g.cy(Math.floor(c / p.cols)), s, facing[k], p.numbers[c], p.seed * 13 + k)).join("");
     layer("sq-layer").innerHTML = hidden >= 0 ? sasquatchSvg(g.cx(hidden % p.cols), g.cy(Math.floor(hidden / p.cols)), s, solved ? "waving" : "") : "";
+    const problems = solved ? [] : liveCheck(p, facing, hidden);
+    layer("error-layer").innerHTML = problems.flatMap((x) => x.cells).filter((c, i, a) => a.indexOf(c) === i)
+      .map((c) => `<rect class="live-error" x="${(c % p.cols) * s + 3}" y="${g.Y0 + Math.floor(c / p.cols) * s + 3}" width="${s - 6}" height="${s - 6}" rx="10"/>`).join("");
+    onLive?.(problems);
   }
   const state = () => ({ facing: facing.slice(), hidden });
   const isSolved = () => hidden === p.solution.spot && facing.every((d, k) => d === truth[k]);
