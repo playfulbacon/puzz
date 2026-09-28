@@ -15,7 +15,7 @@ const piecesOf = (L, edges, n) => {
 };
 
 test("road: no live warnings on any shipped solution, or on its partial halves", () => {
-  for (const id of ["spans", "lanes", "fog", "sasquatch"]) for (const list of Object.values(PACKS[id])) for (const p of list) {
+  for (const id of ["spans", "lanes", "fog"]) for (const list of Object.values(PACKS[id])) for (const p of list) {
     const L = layout(p.rows, p.cols, p.start, p.end), c = piecesOf(L, p.solution, L.n);
     c[L.S] |= 8; c[L.T] |= 4;
     assert.deepEqual(road.liveCheck(p, c), [], p.id);

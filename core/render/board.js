@@ -298,10 +298,14 @@ export function bridgeDecor(p, g, onEdges) {
     i = j;
   }
   if (!best || best.j - best.i < 2) return "";
-  const a = route[best.i], b = route[best.j];
+  return `<g class="decor">${spanDecor(p, g, route[best.i], route[best.j], 0.22, 0.78, true)}</g>`;
+}
+
+/** Suspension cables (and optionally towers) along the straight road from cell a to cell b. */
+function spanDecor(p, g, a, b, t1, t2, withTowers) {
+  const s = g.s;
   const ax = g.cx(a % p.cols), ay = g.cy(Math.floor(a / p.cols)), bx = g.cx(b % p.cols), by = g.cy(Math.floor(b / p.cols));
   const len = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / len, uy = (by - ay) / len, nx = -uy, ny = ux;
-  const t1 = 0.22, t2 = 0.78;
   const P1 = [ax + (bx - ax) * t1, ay + (by - ay) * t1], P2 = [ax + (bx - ax) * t2, ay + (by - ay) * t2];
   const off = s * 0.15, tw = s * 0.2, th = s * 0.07;
   const cable = (side) => {
@@ -321,11 +325,48 @@ export function bridgeDecor(p, g, onEdges) {
     <rect x="${f(-th * 0.55)}" y="${f(-tw * 0.85)}" width="${f(th * 1.1)}" height="${f(tw * 1.7)}" fill="${P.orange}"/>
     <path d="M${f(-th)} ${f(-tw * 0.3)}H${f(th)}M${f(-th)} ${f(tw * 0.3)}H${f(th)}" stroke="${P.orangeLight}" stroke-width="1.5"/>
   </g>`;
-  return `<g class="decor">
-  <path d="${ticks}" stroke="${P.orangeLight}" stroke-width="1.2" stroke-opacity="0.9"/>
+  return `<path d="${ticks}" stroke="${P.orangeLight}" stroke-width="1.2" stroke-opacity="0.9"/>
   <path d="${cable(1)}${cable(-1)}" fill="none" stroke="${P.paper}" stroke-width="1.6" stroke-opacity="0.9"/>
-  ${tower(P1)}${tower(P2)}
-</g>`;
+  ${withTowers ? tower(P1) + tower(P2) : ""}`;
+}
+
+/** Twin towers joined by straight road in this set of ON edges. */
+export function towerPairs(p, g, onSet) {
+  const tw = new Set(p.towers || []), out = [], { L } = g;
+  for (const t of tw) for (const d of [1, 3]) {
+    let cur = t;
+    for (;;) {
+      const ed = L.cellEdges[cur][d];
+      if (ed < 0 || ed >= L.PS || !onSet.has(ed)) break;
+      cur = L.nb(cur, d);
+      if (tw.has(cur)) { out.push([t, cur]); break; }
+    }
+  }
+  return out;
+}
+
+// Fog Signals: the towers rise out of the fog. Drawn as the Golden Gate's own tower, front on.
+export function towers(p, g) {
+  if (!p.towers?.length) return "";
+  const s = g.s;
+  const w = s * 0.34, h = s * 0.66, leg = s * 0.085;
+  let out = "";
+  for (const t of p.towers) {
+    const x = g.cx(t % p.cols), y = g.cy(Math.floor(t / p.cols));
+    out += `<g class="tower" transform="translate(${f(x)} ${f(y)})">
+      <ellipse cx="0" cy="${f(h * 0.46)}" rx="${f(w * 0.75)}" ry="${f(s * 0.07)}" fill="#0B1A24" opacity="0.35"/>
+      <path d="M${f(-w / 2)} ${f(h / 2)}V${f(-h / 2 + leg)}Q${f(-w / 2)} ${f(-h / 2)} ${f(-w / 2 + leg)} ${f(-h / 2)}H${f(-w / 2 + leg)}V${f(h / 2)}Z M${f(w / 2 - leg)} ${f(h / 2)}V${f(-h / 2)}H${f(w / 2 - leg * 0.1)}Q${f(w / 2)} ${f(-h / 2)} ${f(w / 2)} ${f(-h / 2 + leg)}V${f(h / 2)}Z" fill="${P.orange}" stroke="${P.orangeDark}" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M${f(-w / 2)} ${f(-h * 0.3)}H${f(w / 2)}M${f(-w / 2)} ${f(-h * 0.05)}H${f(w / 2)}M${f(-w / 2)} ${f(h * 0.18)}H${f(w / 2)}" stroke="${P.orange}" stroke-width="${f(s * 0.05)}"/>
+      <path d="M${f(-w / 2)} ${f(-h * 0.3)}H${f(w / 2)}M${f(-w / 2)} ${f(-h * 0.05)}H${f(w / 2)}M${f(-w / 2)} ${f(h * 0.18)}H${f(w / 2)}" stroke="${P.orangeDark}" stroke-width="1" stroke-opacity="0.6" transform="translate(0 ${f(s * 0.025)})"/>
+    </g>`;
+  }
+  return `<g class="towers">${out}</g>`;
+}
+
+/** Cables between every pair of twin towers the road joins (Fog Signals' completion flourish). */
+export function towerDecor(p, g, onEdges) {
+  const pairs = towerPairs(p, g, new Set(onEdges));
+  return pairs.length ? `<g class="decor">${pairs.map(([a, b]) => spanDecor(p, g, a, b, 0, 1, false)).join("")}</g>` : "";
 }
 
 // ------------------------------------------------------------------ whole board
@@ -336,7 +377,7 @@ export function staticSvg(p, { s = 60, solved = false, id = "b" + p.seed, cls = 
 ${defs(id, g)}
 ${water(p, g)}${terrain(p, g)}${ships(p, g)}${fogBanks(p, g)}
 ${shoreTop(p, g)}${shoreBottom(p, g)}
-${roadSvg(g, onEdges)}${solved ? bridgeDecor(p, g, onEdges) : ""}
-${foghorns(p, g)}${landNumbers(p, g)}
+${roadSvg(g, onEdges)}${solved ? (p.towers?.length ? towerDecor(p, g, onEdges) : bridgeDecor(p, g, onEdges)) : ""}
+${towers(p, g)}${foghorns(p, g)}${landNumbers(p, g)}
 </svg>`;
 }

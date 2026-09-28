@@ -57,11 +57,11 @@ export function makeHuman(E) {
     return [r / d.focus.length, c / d.focus.length];
   };
 
-  function nextDeduction(m, st, { maxTier = 5, trialSteps = 30, near = null } = {}) {
+  function nextDeduction(m, st, { maxTier = 5, trialSteps = 30, near = null, trials = true } = {}) {
     for (let tier = 1; tier <= Math.min(maxTier, 4); tier++) {
       const { contra, list } = findTier(m, st, tier);
       if (contra) return { contra: true };
-      if (!list.length && tier === 4) {
+      if (!list.length && tier === 4 && trials) {
         const d = findTrial(m, st, 3, true);
         if (d) return { d, avail: 1 };
       }
@@ -78,16 +78,16 @@ export function makeHuman(E) {
         return { d: best, avail: list.length };
       }
     }
-    if (maxTier >= 5) { const d = findTrial(m, st, trialSteps); if (d) return { d, avail: 1 }; }
+    if (maxTier >= 5 && trials) { const d = findTrial(m, st, trialSteps); if (d) return { d, avail: 1 }; }
     return null;
   }
 
-  function humanSolve(m, { maxTier = 5, trialSteps = 30, from = null } = {}) {
+  function humanSolve(m, { maxTier = 5, trialSteps = 30, from = null, trials = true } = {}) {
     const st = from ? E.cloneState(from) : E.initState(m);
     const steps = [];
     let near = null, stuck = false;
     while (!E.isComplete(m, st)) {
-      const nx = nextDeduction(m, st, { maxTier, trialSteps, near });
+      const nx = nextDeduction(m, st, { maxTier, trialSteps, near, trials });
       if (!nx || nx.contra) { stuck = true; break; }
       const before = E.unknownCount(m, st);
       E.applyDeduction(st, nx.d);
@@ -138,6 +138,16 @@ export function analyse(m, trace, clueUse = null) {
     if (prev) { dist += Math.abs(c[0] - prev[0]) + Math.abs(c[1] - prev[1]); moves++; }
     prev = c;
   }
+  // Effort: what a person spends finding each move. Obvious moves (several on offer) are free; a lone
+  // direct move takes a scan; each tier up costs more; a look-ahead costs most. Difficulty levels are
+  // cut from this, since one hard step in a sea of easy ones doesn't make a hard puzzle.
+  const W = { 1: 0, 2: 1, 3: 2.5, 4: 4, 5: 8 };
+  let effort = 0, stuck = 0;
+  for (const s of steps) {
+    if (s.tier === 1) effort += s.avail <= 1 ? 0.3 : 0;
+    else { effort += W[s.tier] ?? 8; stuck++; }
+  }
+  effort = Math.round(effort * 10) / 10;
   const band = maxTier;
   // Difficulty within a band comes from real reasoning steps, not from how many look-aheads it took.
   const score = Math.round((band * 10 + Math.min(reasoning, 20) * 0.8 + Math.min(lookaheads, 3) * 0.5) * 10) / 10;
@@ -145,7 +155,7 @@ export function analyse(m, trace, clueUse = null) {
     band, label: BAND_LABELS[band], score, steps: n, maxTier,
     opening, ramp: n && firstMax >= 0 ? +(firstMax / n).toFixed(2) : 0,
     breakthroughs, stall, finish: +(finishDecided / (total || 1)).toFixed(2), variety: Object.keys(techniques).length, techniques,
-    lookaheads, reasoning, locality: moves ? +(dist / moves).toFixed(2) : 0,
+    lookaheads, reasoning, effort, stuck, locality: moves ? +(dist / moves).toFixed(2) : 0,
     clueUse,
   };
 }

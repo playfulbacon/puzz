@@ -1,6 +1,6 @@
 // Golden Gate boards: tap a square to mark • (road here) or × (no road); dots join into road by
 // themselves. Long-press or right-click picks an exact piece.
-import { geometry, defs, water, terrain, ships, fogBanks, shoreTop, shoreBottom, roadSvgD, bridgeDecor, foghorns, landNumbers } from "../core/render/board.js";
+import { geometry, defs, water, terrain, ships, fogBanks, shoreTop, shoreBottom, roadSvgD, bridgeDecor, towerDecor, towers, foghorns, landNumbers } from "../core/render/board.js";
 import { buildModel, initState } from "../core/road/engine.js";
 import { roadEngine, nextDeduction } from "../core/road/human.js";
 import { diagnose, connected, liveCheck } from "../core/road/diagnose.js";
@@ -16,7 +16,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     ${defs(g.id, g)}${water(p, g)}${terrain(p, g)}${ships(p, g)}${fogBanks(p, g)}
     ${shoreTop(p, g)}${shoreBottom(p, g)}
     <g class="marks"></g><g class="road-layer"></g><g class="decor-layer"></g>
-    ${foghorns(p, g)}${landNumbers(p, g)}<g class="error-layer"></g><g class="hint-layer"></g>
+    ${towers(p, g)}${foghorns(p, g)}${landNumbers(p, g)}<g class="error-layer"></g><g class="hint-layer"></g>
   </svg>`;
   const svg = host.querySelector("svg");
   const layer = (c) => svg.querySelector("." + c);
@@ -56,7 +56,7 @@ export function mountBoard(host, p, { saved = null, onChange = () => {}, onSolve
     complete: (claims) => connected(m, claims),
     diagnose: (claims) => diagnose(p, claims),
     live: (claims) => liveCheck(p, claims),
-    decor: () => bridgeDecor(p, g, [...p.solution, L.PS, L.PN]),
+    decor: () => (p.towers?.length ? towerDecor : bridgeDecor)(p, g, [...p.solution, L.PS, L.PN]),
     hintNext: (claims, isEmpty) => lineHint(roadEngine, H_, m, claims, solution, L.cellEdges, L.n, {
       baseState: () => initState(m), isPort: (ed) => ed >= L.PS, canFill: (i) => !m.blocked[i], isEmpty,
     }),

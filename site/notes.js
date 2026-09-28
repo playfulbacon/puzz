@@ -32,18 +32,22 @@ export const NOTES = {
   },
   fog: {
     fiction: [
-      ["You can't see the bridge in the fog.", "You can only hear it."],
+      ["You can't see the bridge in the fog.", "You can only hear it, and see its towers."],
       ["Each foghorn counts the road squares among the eight squares around it.", "The number is how much of the bridge it can hear close by."],
-      ["When the road is complete, the fog lifts.", "It lifts on the finished road."],
+      ["The towers rise above the fog in pairs.", "Like the Golden Gate's two towers, each pair holds up one straight span: the road runs straight over both, with no turn between. That lets you build pieces of road in the middle of the bay long before they join up."],
+      ["When the road is complete, the fog lifts.", "The cables go up between each pair of towers."],
     ],
     techniques: [
       ["Silence", "A 0 foghorn clears all eight squares around it. This is usually the way in."],
       ["Full chorus", "A foghorn needing every free square around it gets them all."],
+      ["Lonely tower", "A tower with no twin it could reach along its row (a foghorn, the edge, or a third tower in the way) must run up and down, and the other way round."],
+      ["Twin", "Once you know which way a tower runs, and only one tower is in reach that way, the road runs straight from one to the other: lay the whole span."],
+      ["No third tower", "A stretch that already holds a pair can't run on into another tower, so it must turn first."],
+      ["Shapes", "Only a few road shapes fit around a foghorn once some squares are known. Try them by eye: whatever they all agree on is certain. This is the hard puzzles' main tool."],
       ["Overlap", "Two foghorns that share squares: the difference in their numbers settles the squares only one of them hears."],
-      ["Look-ahead", "The road must still connect, so a count that could be met two ways is settled by where the road can go next."],
     ],
-    lineage: "Relatives: Minesweeper's neighbour counts, and loop genres with neighbourhood clues. Counting a single road instead of mines makes connectivity do half the work.",
-    generator: "Foghorns go only on squares the hidden route avoids, and only where their count differs between the true route and a competing one. Then they're removed one by one while the answer stays unique.",
+    lineage: "Relatives: Minesweeper's neighbour counts, and loop genres with neighbourhood clues. Counting a single road instead of mines makes connectivity do half the work. The towers borrow the idea of paired endpoints on a line (as in Hashi's bridges), but here the pair is a straight stretch of the one road, and a third tower may not share it.",
+    generator: "Tower pairs are placed first on the hidden route's longer straight runs, at least a square apart. Foghorns go only on squares the route avoids. Wherever a solver that never looks ahead gets stuck, the generator adds a foghorn or tower pair that lets it carry on from exactly there; then it removes every clue it can while the puzzle stays unique and solvable without look-aheads. No Fog Signals puzzle needs a look-ahead.",
   },
   cablecar: {
     fiction: [
@@ -65,20 +69,20 @@ export const NOTES = {
   },
   sasquatch: {
     fiction: [
-      ["You're the Sasquatch.", "The hikers aren't yours to move: each faces a fixed way and looks straight ahead until a tree blocks the view. Every square in a sight beam is off limits."],
-      ["Sneak from the den to the river.", "One unbroken trail, no branches, no loops, from the cave at the bottom to the water at the top."],
-      ["Every snapped twig is heard.", "A number on a hiker is how many trail squares pass among the eight squares around them. You have to pass close, but exactly that close."],
+      ["You're the Sasquatch family.", "Sasquatches are solitary: each keeps to its own patch of woods, and the creeks mark where one patch ends and the next begins. One Sasquatch per patch."],
+      ["Nobody sees a Sasquatch.", "Hikers look the way they're walking, straight ahead until a tree or another person blocks the view. You don't move them; you hide from them. Sasquatches look along their row and column, and they keep out of each other's sight too."],
+      ["You keep an eye on them.", "Every hiker is watched by at least one Sasquatch: from beside them or behind, where they aren't looking. Hide, but never lose track of the humans."],
     ],
     techniques: [
-      ["Out of sight", "Sight beams wall off the woods; the trail has to thread the gaps between them."],
-      ["Heard enough", "A hiker whose count is already met hears no more: the trail stays out of their other squares."],
-      ["Every twig", "A hiker needing as many squares as the trail can still use around them gets all of them."],
-      ["Overlap", "Two hikers sharing squares: the difference in their numbers settles the squares only one of them hears."],
-      ["No dead ends", "The trail must keep going; pockets it can't leave, and squares it can't reach unseen, stay empty."],
+      ["Out of sight", "Beams close off squares before you start; each Sasquatch you hide closes off its row and column up to the nearest tree or person."],
+      ["Last spot", "A patch with one square left: the Sasquatch hides there. A hiker only one square can still watch: same."],
+      ["Claimed", "Wherever a patch's Sasquatch ends up, it would see a certain square: nobody hides there. The same works for the squares that could watch a hiker."],
+      ["Watcher's patch", "Every square that could watch a hiker lies in one patch: that patch's Sasquatch is the watcher, so the rest of the patch is empty."],
+      ["Squeeze", "A Sasquatch here would leave another patch with nowhere to hide, or a hiker nobody could watch. Hard puzzles extend this to two patches at once."],
     ],
-    lineage: "It shares Fog Signals' counting (the part that felt best to solve) and adds sight lines that close off whole rows and columns. The player is the hunted, not the watcher.",
-    generator: "The hidden trail is a chain of straight runs from den to river, with a few trees off the trail. Hikers are added only where they rule out a rival trail, never where they could see the true one: by sight, by their count, or both. Then hikers are removed, or their numbers hidden, while the trail stays unique.",
-    process: "The first Sasquatch had you turning the hikers to leave one blind spot. It was logically sound but put you in the wrong role: you were the watcher. Now the hikers are fixed and you are the one hiding. The rules reuse the counting that made Fog Signals the most satisfying so far, and puzzles are picked for a steady, cell-by-cell solve.",
+    lineage: "A placement puzzle, not a line: the family of Star Battle and Akari. Regions holding one each come from Star Battle; sight blocked by walls from Akari. The new parts are the one-way sight of the hikers, which makes 'behind a hiker' the safest place in the woods, and the rule that every hiker must be watched, which turns hiding into stalking and gives the puzzle positive clues as well as forbidden squares.",
+    generator: "Trees are scattered, then the family is placed so no two can see each other, then the patches are grown out from each Sasquatch. Wherever a rival answer exists, the generator either reshapes the patches (moving a border square from one patch to its neighbour) or adds a hiker who can't see the family and is watched by it. Wherever a solver that never looks ahead gets stuck, it does the same to let the solver carry on. Then hikers are removed wherever the puzzle stays unique and solvable without them.",
+    process: "Version one had you place Sasquatches out of hikers' sight: every constraint was local, so it was too easy. Version two had you turning the hikers to leave one blind spot: sound, but you were controlling the humans. Version three had you sneak a trail to the river: better fiction, but it was Fog Signals with a skin. This version is a different kind of puzzle altogether: you place, you don't draw, and the humans are fixed obstacles you both hide from and watch.",
   },
 };
 
@@ -89,13 +93,14 @@ export const METRIC_INFO = [
   ["stall", "Longest stall", "Longest run with only one move available", "≤ 6 (≤ 10 hard)", (a) => a.stall <= (a.band <= 3 ? 6 : 10)],
   ["finish", "Finish", "Share of the grid that falls easily after the hardest step", "≥ 0.2", (a) => a.finish >= 0.2],
   ["variety", "Variety", "Different techniques used", "≥ 4", (a) => a.band <= 2 || a.variety >= 4],
+  ["lookaheads", "Look-aheads", "Moves that need trying something and following it through", "≤ 2 (0 in Fog, Sasquatch)", (a) => (a.lookaheads ?? 0) <= 2],
 ];
 
 export const TECHNIQUE_NAMES = {
   continue: "Keep going", full: "Both ends used", deadend: "Dead end", visit: "Must pass through",
   span: "Straight on", nospan: "No landing", "count-done": "Clue satisfied", "count-all": "Clue needs all",
   finished: "Finished", loop: "No loops", early: "Not too soon", reach: "Out of reach", pocket: "Dead-end pocket",
-  bottleneck: "Bottleneck", overlap: "Overlap", "trial-short": "Short look-ahead", trial: "Long look-ahead",
+  bottleneck: "Bottleneck", overlap: "Overlap", lonely: "Lonely tower", last: "Last spot", patch: "Patch done", sight: "Out of sight", watch: "Only watcher", claim: "Claimed", "watch-claim": "Claimed by a watcher", "watch-patch": "Watcher’s patch", block: "Squeeze", pair: "Two-patch squeeze", twin: "Twin", third: "No third tower", shapes: "Shapes", "trial-short": "Short look-ahead", trial: "Long look-ahead",
   steep: "Steep", turntable: "Turntable", crossing: "Crossing", car: "Cable car", "wrong-line": "Which line?",
 
 };

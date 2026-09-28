@@ -13,6 +13,6 @@ export const VARIANT_ORDER = ["spans", "lanes", "fog", "cablecar", "sasquatch"];
 export const COLLECTIONS = [
   { id: "goldengate", name: "Golden Gate", place: "San Francisco", blurb: "One orange road across the bay, from the toll plaza to Vista Point.", variants: ["spans", "lanes", "fog"] },
   { id: "cablecars", name: "Cable Cars", place: "San Francisco", blurb: "Lines climbing the city's hills, where the streets run straight up and the cars turn only on the level.", variants: ["cablecar"] },
-  { id: "sasquatch", name: "Sasquatch", place: "Pacific Northwest", blurb: "You're the Sasquatch. Sneak from your den to the river past hikers who only look straight ahead, and who hear every twig you snap.", variants: ["sasquatch"] },
+  { id: "sasquatch", name: "Sasquatch", place: "Pacific Northwest", blurb: "You're a family of Sasquatches. Each of you hides in its own patch of woods, out of sight of the hikers and of each other, and keeps an eye on the hikers from where they can't look.", variants: ["sasquatch"] },
 ];
 export const collectionOf = (variantId) => COLLECTIONS.find((c) => c.variants.includes(variantId));

@@ -57,22 +57,33 @@ Play them: `python3 -m http.server` from the repo root, then open `/site/`. Once
 
 **Honest assessment.** This is the gentlest variant: at 7×7 almost everything is band 1. Harder puzzles come from 9×9 and 10×10 bays. It's the natural first puzzle in the set.
 
-## Variant 3 — Fog Signals
+## Variant 3 — Fog Signals (v2: with towers)
 
 > Build one road from the toll plaza to Vista Point that never branches or crosses itself, and keep it off the foghorns.
 > Each foghorn hears the road nearby: its number counts the road squares among the eight squares around it.
+> Towers stand in pairs. The road runs straight over every tower, and each straight stretch with a tower on it has exactly two.
 
-**Where the rules come from.** In fog you can't see the bridge, only hear it. The board is literally foggy (soft banks drift over the water), the clues are sounds, and solving it lifts the fog.
+**Where the rules come from.** In fog you can't see the bridge, only hear it, and see the tops of its towers. The Golden Gate hangs its main span between two towers; here every tower has a twin, and the road runs straight from one to the other. When the road is finished the fog lifts and the cables go up between each pair.
+
+**Why towers were added (user feedback, v1.8).** Fog Signals was the favourite, with three complaints:
+1. Hard puzzles felt as easy as gentle ones.
+2. Too often the next move meant thinking several moves ahead.
+3. The road only grew from the shores. The user wanted to *place bridge pieces in the middle, growing from different places until they all connect*, and to have more ways to deduce the next move.
+
+Foghorn counts say which squares are road but never which way the road runs through them, so the solve crept in from the shores. A tower says the road runs straight here, and its twin tells you how far. As soon as a tower's direction is known (often at once: a foghorn, the edge or a third tower blocks one way), a whole straight span can be laid mid-bay. The line then grows from the shores and from every tower pair until the pieces meet.
 
 **The techniques:**
-- *Silence*: a 0 clears all eight squares around it. This is the way in.
+- *Silence*: a 0 clears all eight squares around it.
 - *Full chorus*: a foghorn needing every free square around it gets them.
-- *Overlap*: two foghorns that share squares, where the difference in their numbers settles the squares only one of them hears. This is the signature technique, and the only variant where tier 4 is a real deduction rather than a look-ahead.
-- Connectivity does half the work. A count that could be met two ways is settled by where the road can go next.
+- *Lonely tower*: no twin can be reached along the row, so the tower runs up and down (and vice versa).
+- *Twin*: the tower's direction is known and only one twin is in reach, so lay the span between them.
+- *No third tower*: a stretch that already holds two towers must turn before it reaches another.
+- *Shapes*: once a few squares around a foghorn are known, only a handful of road shapes fit through its eight squares. Whatever they all agree on is certain. This is the main technique of hard puzzles, and it is local: you look at one foghorn, not several moves ahead.
+- *Overlap*: two foghorns that share squares.
 
-**Family.** Minesweeper's neighbour counts, and loop puzzles with neighbourhood clues. Counting a single connected road instead of scattered mines is what makes it a path puzzle.
+**No look-aheads.** The generator now promises every Fog Signals puzzle can be solved without trying something and following it through. Wherever a solver without look-aheads gets stuck, the generator adds a foghorn or tower pair that lets it carry on from exactly there. Then it removes every clue it can while the puzzle stays unique *and* solvable without look-aheads. Difficulty comes from how often you need the harder local techniques (shapes, overlap, connection), not from guessing.
 
-**Honest assessment.** This is the hardest variant. Minimal puzzles are mostly bands 4–5, so gentle ones are made by putting redundant foghorns back. Its opening is often narrow (1–3 ways in), which is the gate it fails most.
+**Family.** Minesweeper's neighbour counts, and loop puzzles with neighbourhood clues. The towers borrow the idea of paired endpoints (as in Hashi), applied to the straight stretches of a single road.
 
 ---
 

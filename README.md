@@ -8,7 +8,7 @@ Collections so far (write-ups in `research/`):
 - **Golden Gate**: Spans, Shipping Lanes, Fog Signals. One International Orange road across the bay.
 - **Cable Cars**: lines between turntables on a terraced city; streets run straight up the hills, so
   lines only turn on level ground.
-- **Sasquatch**: you are the Sasquatch; sneak one trail from the den to the river, out of every hiker's sight, past hikers whose numbers count the twigs they heard snap.
+- **Sasquatch**: you are the Sasquatch family; hide one in every patch of woods, out of sight of the hikers and of each other, while every hiker is watched.
 
 Play at `site/` (GitHub Pages) or locally:
 
@@ -36,9 +36,9 @@ research/                 principles, generation heuristics, Golden Gate design 
 core/lib/human.js         engine-agnostic human-style solver, path-shape metrics, quality gates
 core/road/                Golden Gate engine: one road shore to shore (engine, route walker, adapter)
 core/tracks/              Cable Cars engine + generator: several lines, crossings, level-ground turns
-core/variants/sasquatch.js Sasquatch generator (trail family on the road engine: hiker sight lines, twig counts)
+core/watch/                Sasquatch engine + generator: patches, one-way sight, the watch rule
 core/variants/            variant metadata (rules text, hints) and collections; Golden Gate generators
-core/render/              SVG art: board.js (Golden Gate), cable.js, forest.js, trail.js (Sasquatch)
+core/render/              SVG art: board.js (Golden Gate), cable.js, forest.js, woods.js (Sasquatch)
 site/                     the web app (no build step; imports ../core directly); play*.js boards
 cli/generate.mjs          batch generation, gating and level selection
 test/                     node:test suite

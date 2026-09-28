@@ -136,3 +136,34 @@ What the shipped packs measure (R = reasoning, L = look-aheads, medium / hard):
 | Cable Cars | 0–1 | 0–1 | 0–2 | 1–2 |
 
 **Finding.** Fog Signals and Sasquatch get their difficulty from narrowing, which matches the user's favourite. Spans and Cable Cars get it from one well-placed look-ahead: their rules have no count clues to reason with in the middle game, so between the easy moves there's a single trial. Selection can't fix that; it's a rules problem (the Spans v1 lesson again). Adding a count-style clue to those two is the next design question.
+
+## 10. Difficulty that scales: effort, not the hardest step (v1.8)
+
+User feedback: *"The ones you marked as hard are just as easy as the easy puzzles."* The band was the hardest tier used anywhere in the solve, so one overlap or one short look-ahead in an otherwise flowing solve made a puzzle "hard". People don't feel the hardest step; they feel how often they get stuck and how hard it is to get going again.
+
+**Effort** (`core/lib/human.js`) adds up what each step costs to find:
+
+| Step | Cost |
+|---|---|
+| Direct move, several on offer | 0 |
+| Direct move, the only one on the board | 0.3 (you have to find it) |
+| Tier 2 (one clue or one patch, thought through) | 1 |
+| Tier 3 (connection, shapes, two patches) | 2.5 |
+| Tier 4 (overlap of two clues) | 4 |
+| Look-ahead | 8 |
+
+`stuck` counts the steps where no direct move existed.
+
+**Levels are cut by effort** (`cli/generate.mjs`). Of each variant's pool, ranked by effort:
+- Gentle comes from the easiest 30%, smallest grids first.
+- Medium comes from the 40–72% band.
+- Hard is the six highest-effort puzzles in the top quarter.
+
+So each level is measurably harder than the one before, and the app shows the effort next to the level.
+
+**No look-aheads by construction** (Fog Signals, Sasquatch). A variant can declare `noTrials`. Its generator then:
+1. After making the puzzle unique, runs the human solver with trials switched off.
+2. Wherever that solver gets stuck, adds a clue that makes progress *from the stuck state* (checked by propagating from that exact state).
+3. Removes a clue only if the puzzle stays unique *and* solvable without trials.
+
+The solver's technique list becomes the puzzle's contract. To get hard puzzles out of this, the solver needs real, local, human-sized techniques above tier 1. For Fog that is *shapes*: enumerate the road shapes through one foghorn's eight squares. For Sasquatch it is *claim* and *squeeze*. Otherwise "no trials" just means "easy".

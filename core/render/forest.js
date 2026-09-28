@@ -87,7 +87,7 @@ export function beams(p, g, facing) {
     let r = Math.floor(i / p.cols), c = i % p.cols, len = 0;
     for (;;) {
       const rr = r + DR[dir], cc = c + DC[dir];
-      if (rr < 0 || cc < 0 || rr >= p.rows || cc >= p.cols || p.cells[rr * p.cols + cc] === "#") break;
+      if (rr < 0 || cc < 0 || rr >= p.rows || cc >= p.cols || p.cells[rr * p.cols + cc] === "#" || p.cells[rr * p.cols + cc] === "h") break;
       r = rr; c = cc; len++; seen.add(r * p.cols + c);
     }
     if (!len) continue;

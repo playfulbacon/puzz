@@ -83,12 +83,16 @@ export function buildModel(spec) {
   const { rows: R, cols: C, start, end } = spec;
   const L = layout(R, C, start, end);
   const cells = spec.cells;
-  const blocked = new Uint8Array(L.n), must = new Uint8Array(L.n), straight = new Uint8Array(L.n), orient = new Uint8Array(L.n);
+  const blocked = new Uint8Array(L.n), must = new Uint8Array(L.n), straight = new Uint8Array(L.n), orient = new Uint8Array(L.n), tower = new Uint8Array(L.n);
   for (let i = 0; i < L.n; i++) {
     if (isBlockingChar(cells[i])) blocked[i] = 1;
     if (spec.rules?.waterStraight && cells[i] === ".") straight[i] = 1;
   }
   must[L.S] = 1; must[L.T] = 1;
+  // Towers (Fog Signals): the road runs straight over each one, and every straight stretch with a
+  // tower on it holds exactly two, so towers pair up along rows and columns.
+  const towers = (spec.towers || []).slice();
+  for (const t of towers) { tower[t] = 1; must[t] = 1; straight[t] = 1; }
   const counts = [], lanes = [];
   for (const [k, s] of Object.entries(spec.ships || {})) {
     const at = +k, lane = laneCells(L, cells, at, s.dir);
@@ -115,7 +119,7 @@ export function buildModel(spec) {
   counts.forEach((k, idx) => k.cells.forEach((c) => cellCounts[c].push(idx)));
   const cellLanes = Array.from({ length: L.n }, () => []);
   lanes.forEach((ln, idx) => ln.cells.forEach((c) => cellLanes[c].push(idx)));
-  return { spec, rows: R, cols: C, L, blocked, must, straight, orient, counts, cellCounts, lanes, cellLanes };
+  return { spec, rows: R, cols: C, L, blocked, must, straight, orient, tower, towers, counts, cellCounts, lanes, cellLanes };
 }
 
 // ------------------------------------------------------------------ state
@@ -384,13 +388,164 @@ function ruleOverlap(m, st, out) {
   }
 }
 
+// Road shapes around one foghorn: try every way the road could pass through its eight squares
+// (each square empty or with exactly two ends, neighbours agreeing, the right count) and keep what
+// they all agree on. Humans do this by eye: "only these shapes fit round a 5".
+function ruleShapes(m, st, out) {
+  const { L } = m;
+  m.counts.forEach((k, idx) => {
+    if (k.kind !== "fog" && k.kind !== "hiker") return;
+    const cells = k.cells;
+    const opts = [];
+    let open = 0;
+    for (const c of cells) {
+      const ce = L.cellEdges[c].filter((ed) => ed >= 0);
+      const on = ce.filter((ed) => ed >= L.PS || st.e[ed] === ON), unk = ce.filter((ed) => ed < L.PS && st.e[ed] === UNK);
+      const used = on.length > 0 || st.need[c] || m.must[c];
+      const list = [];
+      if (!used) list.push({ used: 0, on: [] });
+      if (on.length === 2) list.push({ used: 1, on });
+      else if (on.length === 1) for (const a of unk) list.push({ used: 1, on: [on[0], a] });
+      else if (on.length === 0) for (let a = 0; a < unk.length; a++) for (let b = a + 1; b < unk.length; b++) list.push({ used: 1, on: [unk[a], unk[b]] });
+      if (unk.length) open++;
+      opts.push({ c, ce, list });
+    }
+    if (!open) return;
+    const seenOn = new Map(), seenOff = new Map(), cellUsed = new Map();
+    const val = new Map();
+    let valid = 0, nodes = 0;
+    const rec = (i, used) => {
+      if (++nodes > 20000) return;
+      if (used > k.n || used + (opts.length - i) < k.n) return;
+      if (i === opts.length) {
+        if (used !== k.n) return;
+        valid++;
+        for (const [ed, v] of val) (v ? seenOn : seenOff).set(ed, 1);
+        for (let j = 0; j < opts.length; j++) cellUsed.set(opts[j].c, (cellUsed.get(opts[j].c) || 0) | (1 << (opts[j].pick ? 1 : 0)));
+        return;
+      }
+      const o = opts[i];
+      for (const opt of o.list) {
+        const onSet = new Set(opt.on);
+        let ok = true;
+        const setHere = [];
+        for (const ed of o.ce) {
+          if (ed >= L.PS) continue;
+          const v = onSet.has(ed) ? 1 : 0;
+          if (val.has(ed)) { if (val.get(ed) !== v) { ok = false; break; } }
+          else setHere.push([ed, v]);
+        }
+        if (!ok) continue;
+        for (const [ed, v] of setHere) val.set(ed, v);
+        o.pick = opt.used;
+        rec(i + 1, used + opt.used);
+        for (const [ed] of setHere) val.delete(ed);
+      }
+    };
+    rec(0, 0);
+    if (nodes > 20000) return;
+    if (!valid) { out.push({ contra: true, rule: "shapes", focus: [k.at, ...cells] }); return; }
+    const set = [], need = [];
+    for (const [ed] of seenOn) if (!seenOff.has(ed) && st.e[ed] === UNK) set.push([ed, ON]);
+    for (const [ed] of seenOff) if (!seenOn.has(ed) && st.e[ed] === UNK) set.push([ed, OFF]);
+    for (const [c, bits] of cellUsed) if (bits === 2 && !st.need[c] && !m.must[c] && scan(m, st, c).on === 0) need.push(c);
+    if (set.length || need.length) out.push({ rule: "shapes", tier: 3, set, need, focus: [k.at, ...cells], clue: idx });
+  });
+}
+
+// ------------------------------------------------------------------ towers
+// Axis 0 runs left–right (directions L, R), axis 1 up–down (U, D).
+const AXIS_DIRS = [[DL, DR], [DU, DD]];
+const edgeVal = (m, st, i, d) => { const ed = m.L.cellEdges[i][d]; return ed < 0 || ed >= m.L.PS ? (ed < 0 ? OFF : ON) : st.e[ed]; };
+
+/** Cells joined to i by ON edges along an axis, and the towers among them. */
+function chainOf(m, st, i, ax) {
+  const cells = [i];
+  for (const d of AXIS_DIRS[ax]) {
+    let cur = i;
+    for (;;) {
+      const ed = m.L.cellEdges[cur][d];
+      if (ed < 0 || ed >= m.L.PS || st.e[ed] !== ON) break;
+      cur = m.L.nb(cur, d); cells.push(cur);
+    }
+  }
+  return { cells, towers: cells.filter((c) => m.tower[c]).length };
+}
+/** Axis a tower is known to run along, or -1. */
+function towerAxis(m, st, t) {
+  for (let ax = 0; ax < 2; ax++) for (const d of AXIS_DIRS[ax]) {
+    const v = edgeVal(m, st, t, d);
+    if (v === ON) return ax;
+    if (v === OFF) return 1 - ax;
+  }
+  return -1;
+}
+/** From the end of t's chain, walk direction d to the nearest tower the stretch could reach.
+ *  Returns { cells (walked, ending at the partner), edges (UNK edges to set ON) } or null. */
+function reachTwin(m, st, t, ax, d) {
+  const { L } = m, perp = AXIS_DIRS[1 - ax];
+  const mine = chainOf(m, st, t, ax);
+  let cur = t;
+  // Skip along the chain already built.
+  for (;;) { const ed = L.cellEdges[cur][d]; if (ed < 0 || ed >= L.PS || st.e[ed] !== ON) break; cur = L.nb(cur, d); }
+  const cells = [], edges = [];
+  for (;;) {
+    const ed = L.cellEdges[cur][d];
+    if (ed < 0 || ed >= L.PS || st.e[ed] === OFF) return null;
+    if (st.e[ed] === UNK) edges.push(ed);
+    const nx = L.nb(cur, d);
+    if (m.blocked[nx]) return null;
+    cells.push(nx);
+    if (m.tower[nx]) {
+      if (towerAxis(m, st, nx) === 1 - ax) return null;
+      const theirs = chainOf(m, st, nx, ax);
+      return mine.towers + theirs.towers === 2 ? { cells, edges, partner: nx } : null;
+    }
+    // A square on the stretch runs straight: it can't already turn off it.
+    if (perp.some((pd) => edgeVal(m, st, nx, pd) === ON)) return null;
+    cur = nx;
+  }
+}
+
+function ruleTowers(m, st, out) {
+  const { L } = m;
+  for (const t of m.towers) {
+    const known = towerAxis(m, st, t);
+    for (let ax = 0; ax < 2; ax++) {
+      if (known === 1 - ax) continue;
+      const mine = chainOf(m, st, t, ax);
+      if (mine.towers > 2) { out.push({ contra: true, rule: "twin", focus: mine.cells }); return; }
+      if (mine.towers === 2) continue;
+      const reach = AXIS_DIRS[ax].map((d) => reachTwin(m, st, t, ax, d));
+      const ok = reach.filter(Boolean);
+      if (!ok.length) {
+        if (known === ax) { out.push({ contra: true, rule: "twin", focus: [t] }); return; }
+        // No twin to reach this way: the tower runs the other way.
+        const set = AXIS_DIRS[ax].map((d) => L.cellEdges[t][d]).filter((ed) => ed >= 0 && ed < L.PS && st.e[ed] === UNK).map((ed) => [ed, OFF]);
+        if (set.length) out.push({ rule: "lonely", tier: 1, set, focus: [t] });
+      } else if (ok.length === 1 && known === ax && ok[0].edges.length) {
+        out.push({ rule: "twin", tier: 1, set: ok[0].edges.map((ed) => [ed, ON]), focus: [t, ...ok[0].cells] });
+      }
+    }
+  }
+  // A stretch already holding two towers can't take in a third.
+  for (let ed = 0; ed < L.PS; ed++) {
+    if (st.e[ed] !== UNK) continue;
+    const [a, b] = L.ends[ed], ax = ed < L.H ? 0 : 1;
+    const ca = chainOf(m, st, a, ax), cb = chainOf(m, st, b, ax);
+    if (ca.towers + cb.towers > 2) out.push({ rule: "third", tier: 1, set: [[ed, OFF]], focus: [a, b, ...ca.cells.filter((c) => m.tower[c]), ...cb.cells.filter((c) => m.tower[c])] });
+  }
+}
+
 export const RULES = [
   { id: "degree", tier: 1, find: ruleDegree },
   { id: "straight", tier: 1, find: ruleStraight },
   { id: "count", tier: 1, find: ruleCount },
   { id: "complete", tier: 1, find: ruleComplete },
+  { id: "towers", tier: 1, find: ruleTowers },
   { id: "loop", tier: 2, find: ruleNoLoop },
   { id: "early", tier: 3, find: ruleEarly },
+  { id: "shapes", tier: 3, find: ruleShapes },
   { id: "connect", tier: 3, find: ruleConnect },
   { id: "overlap", tier: 4, find: ruleOverlap },
 ];
@@ -450,6 +605,13 @@ export function checkSolution(m, e) {
   for (const k of m.counts) {
     let used = 0; for (const c of k.cells) if (deg[c]) used++;
     if (used !== k.n) return false;
+  }
+  if (m.towers.length) {
+    const st = { e, need: new Uint8Array(L.n) };
+    for (const t of m.towers) {
+      const ax = towerAxis(m, st, t);
+      if (ax < 0 || chainOf(m, st, t, ax).towers !== 2) return false;
+    }
   }
   return true;
 }

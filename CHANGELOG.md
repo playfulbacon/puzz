@@ -2,6 +2,9 @@
 
 The site shows its version at the top of every page, beside the name. Every change bumps it (`npm run bump -- minor "what changed"`).
 
+## 1.8.0 (2026-09-28)
+- Fog Signals gets twin towers (lay road mid-bay) and never needs a look-ahead. New Sasquatch: a placement puzzle — hide one per patch, unseen, watching every hiker. Levels now cut by measured effort, so Hard is really harder.
+
 ## 1.7.0 (2026-09-27)
 - Sasquatch rebuilt: you're the Sasquatch sneaking a trail from the den to the river past hikers you don't control; numbers count twigs they heard snap. Puzzle selection now favours cell-by-cell narrowing (at most 2 look-aheads, medium at most 1, hard = most reasoning).
 

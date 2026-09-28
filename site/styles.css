@@ -134,6 +134,7 @@ button.primary:hover { background: var(--orange-ink); }
 .board.solved .decor-layer { animation: rise 1.2s 0.3s ease both; }
 .board.solved.instant .decor-layer { animation: none; }
 .hint-cell { fill: #FFFFFF; fill-opacity: 0.16; stroke: #FFE7B8; stroke-width: 2.5; stroke-dasharray: 6 4; animation: pulse 1.2s ease-in-out infinite alternate; pointer-events: none; }
+.hint-focus { fill: none; stroke: #FFE7B8; stroke-opacity: 0.55; stroke-width: 2; pointer-events: none; }
 .hint-need { fill: #E4603E; fill-opacity: 0.22; stroke: #E4603E; stroke-width: 2; pointer-events: none; }
 .hint-edge.on { stroke: #FFD9A0; stroke-width: 9; stroke-linecap: round; stroke-dasharray: 2 12; fill: none; pointer-events: none; }
 .hint-edge.off { stroke: #FFD9A0; stroke-width: 3.5; stroke-linecap: round; fill: none; pointer-events: none; }

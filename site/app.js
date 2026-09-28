@@ -3,10 +3,10 @@ import { VARIANTS, COLLECTIONS, collectionOf } from "../core/variants/index.js";
 import { RULE_TEXT, TIER_NAMES as ROAD_TIERS } from "../core/road/human.js";
 import * as roadArt from "../core/render/board.js";
 import * as cableArt from "../core/render/cable.js";
-import * as trailArt from "../core/render/trail.js";
+import * as woodsArt from "../core/render/woods.js";
 import * as roadPlay from "./play.js";
 import * as tracksPlay from "./play-tracks.js";
-import * as trailPlay from "./play-trail.js";
+import * as watchPlay from "./play-watch.js";
 import { NOTES, METRIC_INFO, TECHNIQUE_NAMES } from "./notes.js";
 import { VERSION, RELEASED } from "./version.js";
 
@@ -16,7 +16,7 @@ const LEVELS = [["gentle", "Gentle"], ["medium", "Medium"], ["hard", "Hard"]];
 const FAMILY = {
   road: { art: roadArt, play: roadPlay, howto: "Tap a square once for • (road goes through here), twice for × (no road), three times to clear. Dots join up by themselves; a dot that could join too many neighbours turns red. Long-press or right-click to pick an exact piece.", solvedLine: "The bridge is open!", almost: "The road reaches Vista Point, but it isn't right yet:" },
   tracks: { art: cableArt, play: tracksPlay, howto: "Tap a square once for • (track goes through here), twice for × (no track), three times to clear. Dots join up by themselves, and turntables join the dot next to them; a dot that could join too many turns red. Long-press or right-click to pick an exact piece, e.g. ┼ for a crossing. Rails take a line's colour once they reach its turntable.", solvedLine: "All aboard: the cable cars are running!", almost: "Every line reaches its turntables, but something's wrong:" },
-  trail: { art: trailArt, play: trailPlay, howto: "You're the Sasquatch. Tap a square once for • (your trail goes here), twice for × (not here), three times to clear. Dots join into a trail by themselves. Squares in a hiker's sight beam are off limits. Long-press or right-click to pick an exact piece.", solvedLine: "Nobody saw a thing!", almost: "The trail reaches the river, but:" },
+  watch: { art: woodsArt, play: watchPlay, howto: "Tap a square once for × (nobody hides here), twice to hide a Sasquatch, three times to clear. Long-press or right-click goes the other way. Squares lit by a hiker's beam can't be used.", solvedLine: "Nobody saw a thing!", almost: "Every patch has a Sasquatch, but:" },
 };
 const VARIANT_HINTS = {
   spans: {
@@ -147,7 +147,7 @@ function play(main, r) {
         <div class="row"><button class="primary" data-act="hint">Hint</button><button data-act="apply" hidden>Show me</button></div>
         <ul class="live-errors" aria-live="polite" hidden></ul>
         <p class="hint-text" aria-live="polite"></p>
-        <p class="meta"><span class="timer">0:00</span> · ${p.rows}×${p.cols} · difficulty band ${p.rating.band}/5</p>
+        <p class="meta"><span class="timer">0:00</span> · ${p.rows}×${p.cols} · ${LEVELS.find(([l]) => l === r.level)[1]} · effort ${Math.round(p.rating.effort ?? 0)}</p>
       </div>
       <details class="panel notes">
         <summary>Setter's notes for this puzzle</summary>
@@ -225,7 +225,7 @@ function setterNotes(p, v) {
   const a = p.rating;
   const rows = METRIC_INFO.map(([k, name, desc, target, ok]) => `<tr><td title="${esc(desc)}">${name}</td><td>${a[k]}</td><td class="target">${target}</td><td>${ok(a) ? "✓" : "✗"}</td></tr>`).join("");
   const tech = Object.entries(a.techniques).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="chip">${esc(TECHNIQUE_NAMES[k] || k)} ×${n}</span>`).join("");
-  return `<p>Difficulty <b>band ${a.band} of 5</b>: the hardest step needs <i>${esc(tierNames(v)[a.maxTier])}</i>. ${a.steps} deductions by the rule-based solver.${a.clueUse != null ? ` ${Math.round(a.clueUse * 100)}% of clues are used directly.` : ""}</p>
+  return `<p>Effort <b>${a.effort ?? "?"}</b>: ${a.stuck ?? 0} times the solver ran out of direct moves and needed a harder idea${a.lookaheads ? `, ${a.lookaheads} of them a look-ahead` : ", never a look-ahead"}. The hardest step needs <i>${esc(tierNames(v)[a.maxTier])}</i>. ${a.steps} deductions in all.${a.clueUse != null ? ` ${Math.round(a.clueUse * 100)}% of clues are used directly.` : ""}</p>
     <table class="metrics"><thead><tr><th>Measure</th><th>Value</th><th>Target</th><th></th></tr></thead><tbody>${rows}</tbody></table>
     <div class="chips">${tech}</div>`;
 }

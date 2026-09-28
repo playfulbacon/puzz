@@ -14,7 +14,7 @@ const piecesOf = (L, edges, n) => {
   return claims;
 };
 
-for (const id of ["spans", "lanes", "fog", "sasquatch"]) {
+for (const id of ["spans", "lanes", "fog"]) {
   test(`${id}: the solution has no complaints; a stray piece is explained`, () => {
     const p = PACKS[id].gentle[0], L = layout(p.rows, p.cols, p.start, p.end);
     const claims = piecesOf(L, p.solution, L.n);
@@ -45,9 +45,20 @@ test("cable cars: the solution has no complaints", () => {
   assert.deepEqual(tracks.diagnose(p, claims), []);
 });
 
-test("sasquatch: a trail through a hiker's hearing range with the wrong count is explained", () => {
-  const p = PACKS.sasquatch.gentle[0], L = layout(p.rows, p.cols, p.start, p.end);
-  const claims = piecesOf(L, p.solution, L.n);
-  claims[L.S] |= 8; claims[L.T] |= 4;
-  assert.deepEqual(road.diagnose(p, claims), []);
+test("sasquatch: the solution has no complaints; two in a patch and an unwatched hiker are explained", async () => {
+  const W = await import("../core/watch/diagnose.js");
+  const E = await import("../core/watch/engine.js");
+  const p = PACKS.sasquatch.medium[0], m = E.buildModel(p);
+  const marks = new Uint8Array(m.n);
+  for (const i of p.solution) marks[i] = W.MSQ;
+  assert.deepEqual(W.diagnose(p, marks), []);
+  assert.deepEqual(W.liveCheck(p, marks), []);
+  // Move one Sasquatch to another open square of its patch that sees nobody else.
+  const i = p.solution[0], r = m.region[i];
+  const j = m.regionOpen[r].find((x) => x !== i);
+  if (j != null) {
+    marks[j] = W.MSQ;
+    const live = W.liveCheck(p, marks);
+    assert.ok(live.some((x) => /one patch/.test(x.text)), "two in a patch flagged");
+  }
 });

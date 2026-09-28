@@ -62,12 +62,25 @@ export function diagnose(p, claims) {
   const turns = [], along = [];
   for (const i of onRoute) {
     const x = pieceAt(i), straight = x === 3 || x === 12;
-    if (m.straight[i] && !m.orient[i] && !straight) turns.push(i);
+    if (m.straight[i] && !m.orient[i] && !m.tower[i] && !straight) turns.push(i);
     if ((m.orient[i] & 1) && (x & 3)) along.push(i);
     if ((m.orient[i] & 2) && (x & 12)) along.push(i);
   }
   if (turns.length) reasons.push({ text: "Spans can't bend: the road turns on open water here. It can only turn on land.", cells: turns });
   if (along.length) reasons.push({ text: "The road runs along a shipping lane here. It may only cross a lane straight over.", cells: along });
+
+  // Towers: on the road, straight over, and in pairs.
+  const missed = m.towers.filter((t) => !route.has(t));
+  if (missed.length) reasons.push({ text: `The road must cross every tower; ${missed.length === 1 ? "this one is" : "these are"} left standing alone.`, cells: missed });
+  const bent = m.towers.filter((t) => route.has(t) && ![3, 12].includes(pieceAt(t)));
+  if (bent.length) reasons.push({ text: "The road turns on a tower. It must run straight over every tower.", cells: bent });
+  const badPair = new Set();
+  for (const t of m.towers) {
+    if (!route.has(t) || ![3, 12].includes(pieceAt(t))) continue;
+    const st = stretch(m, e, t, pieceAt(t) === 3 ? 0 : 1);
+    if (st.towers.length !== 2) st.towers.forEach((c) => badPair.add(c));
+  }
+  if (badPair.size) reasons.push({ text: "Towers come in pairs: each straight stretch of road with a tower on it needs exactly two.", cells: [...badPair] });
 
   for (const k of m.counts) {
     const used = k.cells.filter((c) => route.has(c)).length;
@@ -79,6 +92,20 @@ export function diagnose(p, claims) {
     reasons.push({ text, cells: [k.at, ...k.cells.filter((c) => route.has(c))] });
   }
   return reasons;
+}
+
+/** The straight stretch of agreed road through cell t along an axis (0 left–right, 1 up–down). */
+function stretch(m, e, t, ax) {
+  const { L } = m, cells = [t], ends = [];
+  for (const d of ax ? [DU, DD] : [DL, DR]) {
+    let cur = t;
+    for (;;) {
+      const ed = L.cellEdges[cur][d];
+      if (ed < 0 || ed >= L.PS || e[ed] !== ON) { ends.push(cur); break; }
+      cur = L.nb(cur, d); cells.push(cur);
+    }
+  }
+  return { cells, ends, towers: cells.filter((c) => m.tower[c]) };
 }
 
 // ------------------------------------------------------------------ live rule checks
@@ -106,14 +133,31 @@ export function liveCheck(p, claims) {
   const turnsOnWater = [], alongLane = [];
   for (let i = 0; i < L.n; i++) {
     const x = claims[i]; if (!isPiece(x)) continue;
-    if (m.straight[i] && !m.orient[i] && x !== 3 && x !== 12 && [5, 6, 9, 10].includes(x)) turnsOnWater.push(i);
+    if (m.straight[i] && !m.orient[i] && !m.tower[i] && x !== 3 && x !== 12 && [5, 6, 9, 10].includes(x)) turnsOnWater.push(i);
     if (((m.orient[i] & 1) && (x & 3)) || ((m.orient[i] & 2) && (x & 12))) alongLane.push(i);
   }
   add("Spans can't bend: a piece of road turns on open water.", turnsOnWater);
   add("A piece of road runs along a shipping lane; the road may only cross a lane straight over.", alongLane);
 
+  // Towers: never ×, never a turn, never three on one stretch, never a stretch closed off with one.
+  const e = mutualEdges(m, claims);
+  add("A tower always carries the road: it can't be marked ×.", m.towers.filter((t) => claims[t] === 16));
+  add("The road runs straight over a tower; it can't turn here.", m.towers.filter((t) => [5, 6, 9, 10].includes(claims[t])));
+  const three = new Set(), lone = new Set();
+  for (const t of m.towers) {
+    const x = claims[t];
+    if (x !== 3 && x !== 12) continue;
+    const st = stretch(m, e, t, x === 3 ? 0 : 1);
+    if (st.towers.length > 2) st.towers.forEach((c) => three.add(c));
+    // Both ends of the stretch are finished turns (or the shore): it can't grow to reach a twin.
+    const closed = (c) => { const y = claims[c]; return isPiece(y) && y !== 3 && y !== 12 && y !== x && [5, 6, 9, 10].includes(y); };
+    if (st.towers.length === 1 && st.ends.every((c) => c !== t && closed(c))) st.cells.forEach((c) => lone.add(c));
+  }
+  add("Three towers on one straight stretch: towers come in pairs.", [...three]);
+  add("This straight stretch has only one tower, and both its ends already turn. Towers come in pairs.", [...lone]);
+
   // A closed loop of road that doesn't reach the shore.
-  const e = mutualEdges(m, claims), seen = new Uint8Array(L.n), loops = [];
+  const seen = new Uint8Array(L.n), loops = [];
   for (let s = 0; s < L.n; s++) {
     if (seen[s] || !isPiece(claims[s])) continue;
     const comp = [], q = [s]; seen[s] = 1;

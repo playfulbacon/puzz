@@ -3,7 +3,7 @@
 //   → remove every clue that isn't needed → optionally add some back for gentler levels
 //   → human-solve, measure path shape, accept or reject.
 import { Rng } from "../lib/rng.js";
-import { layout, buildModel, solve, checkSolution, edgesFromPath, cellsUsed } from "../road/engine.js";
+import { layout, buildModel, solve, checkSolution, edgesFromPath, cellsUsed, cloneState, propagate, UNK } from "../road/engine.js";
 import { walkRoute } from "../road/walk.js";
 import { humanSolve, analyse, gates } from "../road/human.js";
 import { weightedPick } from "../lib/human.js";
@@ -35,11 +35,37 @@ export function makeGenerator(v) {
       if (res.count === 1) break;
       const alt = res.solutions.find((s) => s.some((x, i) => x !== truth[i]));
       const altUsed = cellsUsed(L, alt);
-      const cands = v.candidates(spec, L, { truth, used, alt, altUsed, rng });
+      const cands = v.candidates(spec, L, { truth, used, alt, altUsed, rng, route });
       if (!cands.length) return fail("no-candidates");
       const c = weightedPick(rng, cands);
       v.add(spec, c); v.recompute?.(spec, L, truth);
       added.push(c);
+    }
+
+    // Variants that promise no look-aheads: wherever a solver without trials gets stuck, add a clue
+    // that lets it carry on from exactly there.
+    const trials = !v.noTrials;
+    const humanOk = (m) => trials || humanSolve(m, { trials: false }).solved;
+    if (!trials) {
+      for (let iter = 0; ; iter++) {
+        if (iter > 40) return fail("stuck-iterations");
+        const t = humanSolve(buildModel(spec), { trials: false });
+        if (t.solved) break;
+        const unknown = (st) => { let k = 0; for (let ed = 0; ed < L.PS; ed++) if (st.e[ed] === UNK) k++; return k; };
+        const before = unknown(t.state);
+        const cands = v.allCandidates(spec, L, { truth, used, route });
+        const helps = cands.filter((c) => {
+          const s2 = structuredClone(spec);
+          if (v.add(s2, c) === false) return false;
+          v.recompute?.(s2, L, truth);
+          const st = cloneState(t.state);
+          return propagate(buildModel(s2), st, 4, 3) !== "contra" && unknown(st) < before;
+        });
+        const pool = helps.length ? helps : cands;
+        if (!pool.length) return fail("no-candidates");
+        const c = weightedPick(rng, pool);
+        v.add(spec, c); v.recompute?.(spec, L, truth);
+      }
     }
 
     // Remove every clue whose absence still leaves one solution (random order).
@@ -48,7 +74,7 @@ export function makeGenerator(v) {
       if (v.remove(spec, x) === false) continue;
       v.recompute?.(spec, L, truth);
       const m = buildModel(spec);
-      const ok = checkSolution(m, truth) && solve(m, { limit: 2, budget: 30000 }).count === 1;
+      const ok = checkSolution(m, truth) && solve(m, { limit: 2, budget: 30000 }).count === 1 && humanOk(m);
       if (ok) removed.push(x); else { v.add(spec, x); v.recompute?.(spec, L, truth); }
     }
     // Gentler puzzles: put some redundant clues back.
@@ -56,7 +82,7 @@ export function makeGenerator(v) {
 
     const m = buildModel(spec);
     if (!checkSolution(m, truth)) return fail("final-invalid");
-    const trace = humanSolve(m);
+    const trace = humanSolve(m, { trials });
     if (!trace.solved) return fail("human-stuck");
     if (trace.edges.some((x, i) => x !== truth[i])) return fail("human-mismatch");
     const rating = analyse(m, trace);
@@ -65,7 +91,7 @@ export function makeGenerator(v) {
       id: `${v.id}-${rows}x${cols}-s${seed}${addBack ? "-a" + addBack : ""}`,
       variant: v.id, rows, cols, start: spec.start, end: spec.end, seed, addBack,
       cells: spec.cells.join(""), rules: spec.rules,
-      ...(spec.lands ? { lands: spec.lands } : {}), ...(spec.ships ? { ships: spec.ships } : {}), ...(spec.fogs ? { fogs: spec.fogs } : {}), ...(spec.hikers ? { hikers: spec.hikers } : {}),
+      ...(spec.lands ? { lands: spec.lands } : {}), ...(spec.ships ? { ships: spec.ships } : {}), ...(spec.fogs ? { fogs: spec.fogs } : {}), ...(spec.hikers ? { hikers: spec.hikers } : {}), ...(spec.towers?.length ? { towers: spec.towers.slice().sort((a, b) => a - b) } : {}),
       solution: onEdges, rating, gates: gates(rating),
     };
   };
